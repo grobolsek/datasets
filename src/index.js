@@ -1,14 +1,14 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import Data from './pages/datasets/data';
+import ReactDOM from 'react-dom';
 import Info from './pages/datasets/info';
 import reportWebVitals from './reportWebVitals';
+import {BrowserRouter} from "react-router-dom";
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <Info />
-  </React.StrictMode>
+ReactDOM.render(
+    <BrowserRouter>
+        <Info />
+    </BrowserRouter>,
+    document.getElementById("root")
 );
 
 // If you want to start measuring performance in your app, pass a function

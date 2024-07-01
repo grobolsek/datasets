@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Container } from '@mui/material';
+import { Box, Button, Container } from '@mui/material';
 import CollapseComponent from '../../components/CollapseComponent';
+import { useNavigate } from "react-router-dom";
 
-const App = () => {
+const Info = () => {
     const [datasets, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    let navigate = useNavigate();
+
     useEffect(() => {
-        // Fetch data from the /info endpoint
+        // Fetch data from the /get/info endpoint
         fetch('/get/info')
             .then((response) => {
                 if (!response.ok) {
@@ -39,8 +42,16 @@ const App = () => {
         return <p>Error: {error.message}</p>;
     }
 
+    const redirectToAddPage = () => {
+        let path = '/edit_add'; // Assuming '/edit_add' is the correct route path
+        navigate(path);
+    };
+
     return (
         <Container>
+            <Box>
+                <Button sx={{ mx: 2, bgcolor: '#00e676' }} variant="contained" onClick={redirectToAddPage}>ADD</Button>
+            </Box>
             {datasets.map((dataset, index) => (
                 <CollapseComponent key={index} dataset={dataset} onRemove={handleRemoveDataset} />
             ))}
@@ -48,4 +59,4 @@ const App = () => {
     );
 };
 
-export default App;
+export default Info;
