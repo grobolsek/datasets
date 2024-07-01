@@ -19,6 +19,18 @@ const CollapseComponent = ({ dataset }) => {
         setExpanded(!expanded);
     };
 
+    const renderValue = (value) => {
+        if (value === true) {
+            return 'true';
+        } else if (value === false) {
+            return 'false';
+        } else if (value === null) {
+            return 'null';
+        } else {
+            return value;
+        }
+    };
+
     return (
         <Accordion expanded={expanded} onChange={toggleExpanded}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel-content">
@@ -48,7 +60,7 @@ const CollapseComponent = ({ dataset }) => {
                         <List sx={{ height: '100%', overflowY: 'auto' }}>
                             {Object.entries(dataset.features).map(([key, value]) => (
                                 <ListItem key={key}>
-                                    <ListItemText primary={key} secondary={value} />
+                                    <ListItemText primary={key} secondary={renderValue(value)} />
                                 </ListItem>
                             ))}
                         </List>
@@ -69,7 +81,7 @@ const CollapseComponent = ({ dataset }) => {
                         <List sx={{ height: '100%', overflowY: 'auto' }}>
                             {Object.entries(dataset.target).map(([key, value]) => (
                                 <ListItem key={key}>
-                                    <ListItemText primary={key} secondary={value} />
+                                    <ListItemText primary={key} secondary={renderValue(value)} />
                                 </ListItem>
                             ))}
                         </List>
@@ -90,13 +102,13 @@ const CollapseComponent = ({ dataset }) => {
                         <List sx={{ height: '100%', overflowY: 'auto', padding: '0'}}>
                             {Object.entries(dataset).filter(([key]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
                                 <ListItem key={key}>
-                                    <ListItemText primary={key} secondary={value} />
+                                    <ListItemText primary={key} secondary={renderValue(value)} />
                                 </ListItem>
                             ))}
                         </List>
                     </Box>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'end', }}>
+                <Box sx={{ display: 'flex', justifyContent: 'end'}}>
                     <Button sx={{ mx: 2, bgcolor: '#ff9100' }} variant="contained" color="secondary">EDIT</Button>
                     <Button sx={{ mx: 2, bgcolor: '#d50000' }} variant="contained" color="secondary">REMOVE</Button>
                 </Box>
