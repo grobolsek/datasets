@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Container } from "@mui/material";
-import CollapseComponent from "../../components/CollapseComponent";
+import { Container } from '@mui/material';
+import CollapseComponent from '../../components/CollapseComponent';
 
 const App = () => {
-    const [datasets, setDatasets] = useState([]); // Initialize as an empty array
+    const [datasets, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -16,8 +16,8 @@ const App = () => {
                 }
                 return response.json();
             })
-            .then((datasets) => {
-                setDatasets(Object.values(datasets)); // Convert object to array
+            .then((data) => {
+                setData(Object.entries(data).map(([key, value]) => ({ ...value, name: key })));
                 setLoading(false);
             })
             .catch((error) => {
@@ -26,6 +26,10 @@ const App = () => {
                 setLoading(false);
             });
     }, []);
+
+    const handleRemoveDataset = (datasetName) => {
+        setData((prevData) => prevData.filter((dataset) => dataset.name !== datasetName));
+    };
 
     if (loading) {
         return <p>Loading...</p>;
@@ -38,7 +42,7 @@ const App = () => {
     return (
         <Container>
             {datasets.map((dataset, index) => (
-                <CollapseComponent key={index} dataset={dataset} />
+                <CollapseComponent key={index} dataset={dataset} onRemove={handleRemoveDataset} />
             ))}
         </Container>
     );
