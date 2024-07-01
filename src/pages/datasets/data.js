@@ -6,8 +6,7 @@ const App = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Fetch data from the /info endpoint
-        fetch('/data/zoo')
+        fetch('/get/data/zoo')
             .then((response) => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');

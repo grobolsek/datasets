@@ -34,7 +34,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
     };
 
     const handleConfirmRemove = () => {
-        fetch(`/remove-dataset/${dataset.name}`, {
+        fetch(`/remove/${dataset.name}`, {
             method: 'DELETE',
         })
             .then((response) => {
