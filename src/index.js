@@ -19,7 +19,7 @@ const router = createBrowserRouter([
         element: <EditPage />,
     },
     {
-        path: "/data",
+        path: "/data/:datasetName",
         element: <DataPage />,
     }
 ]);

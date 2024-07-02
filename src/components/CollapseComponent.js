@@ -16,10 +16,14 @@ import {
     DialogTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CopyButton from "./CopyButton";
+import {useNavigate} from "react-router-dom";
 
 const CollapseComponent = ({ dataset, onRemove }) => {
     const [expanded, setExpanded] = useState(false);
     const [open, setOpen] = useState(false);
+    const navigation= useNavigate();
+
 
     const toggleExpanded = () => {
         setExpanded(!expanded);
@@ -52,6 +56,11 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                 console.error('Error removing dataset:', error);
             });
     };
+
+    function redirectToDataPage() {
+        let path = '/data/' + dataset.name;
+        navigation(path)
+    }
 
     return (
         <>
@@ -129,9 +138,42 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             </List>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'end'}}>
-                        <Button sx={{ mx: 2, bgcolor: '#ff9100' }} variant="contained">EDIT</Button>
-                        <Button sx={{ mx: 2, bgcolor: '#d50000' }} variant="contained" onClick={handleRemoveClick}>REMOVE</Button>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
+                        <Button
+                            sx={{
+                                bgcolor: 'gray',
+                                ':hover': {
+                                    bgcolor: 'darkgray'
+                                }
+                            }}
+                            variant="contained"
+                            onClick={redirectToDataPage}>DATA
+                        </Button>
+
+                        <Box>
+                            <CopyButton sx={{bgcolor: '#00e676', display: 'flex', gap: 2 }} textToCopy={JSON.stringify(dataset)} />
+
+                            <Button
+                                sx={{
+                                    bgcolor: '#ff9100',
+                                    ':hover': {
+                                        bgcolor: '#b26500'
+                                    }
+                                }}
+                                variant="contained">EDIT
+                            </Button>
+
+                            <Button
+                                sx={{
+                                    bgcolor: '#d50000',
+                                    ':hover': {
+                                        bgcolor: '#950000'
+                                    }
+                                }}
+                                variant="contained"
+                                onClick={handleRemoveClick}>REMOVE
+                            </Button>
+                        </Box>
                     </Box>
                 </AccordionDetails>
             </Accordion>

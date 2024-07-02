@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
+import { useParams } from "react-router-dom";
 
 const DataPage = () => {
     const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const params = useParams();
 
     useEffect(() => {
-        fetch('/get/data/zoo')
+        console.log("params: ", params.datasetName)
+        fetch('/get/data/' + params.datasetName)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
@@ -22,7 +25,7 @@ const DataPage = () => {
                 setError(error);
                 setLoading(false);
             });
-    }, []);
+    }, [params]);
 
     if (loading) {
         return <p>Loading...</p>;
@@ -34,11 +37,11 @@ const DataPage = () => {
 
     return (
         <div>
-            <h1>Animals Data</h1>
+            <h1>Data</h1>
             <ul>
-                {Object.entries(data).map(([animal, attributes]) => (
-                    <li key={animal}>
-                        <h2>{animal}</h2>
+                {Object.entries(data).map(([k, attributes]) => (
+                    <li key={k}>
+                        <h2>{k}</h2>
                         <ul>
                             {Object.entries(attributes).map(([key, value]) => (
                                 <li key={key}>{`${key}: ${value}`}</li>

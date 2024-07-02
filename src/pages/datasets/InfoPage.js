@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Container } from '@mui/material';
+import {Box, Button, Container, Typography} from '@mui/material';
 import CollapseComponent from '../../components/CollapseComponent';
 import { useNavigate   } from "react-router-dom";
 
@@ -10,7 +10,6 @@ const InfoPage = () => {
     const navigation= useNavigate();
 
     useEffect(() => {
-        // Fetch data from the /get/info endpoint
         fetch('/get/info')
             .then((response) => {
                 if (!response.ok) {
@@ -48,8 +47,20 @@ const InfoPage = () => {
 
     return (
         <Container>
-            <Box>
-                <Button sx={{ mx: 2, bgcolor: '#00e676' }} variant="contained" onClick={redirectToAddPage}>ADD</Button>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography component="h1" variant="h4">
+                    Dataset info
+                </Typography>
+                <Button
+                    sx={{
+                        bgcolor: '#00e676',
+                        ':hover': {
+                            bgcolor: '#00a152'
+                        }
+                    }}
+                    variant="contained"
+                    onClick={redirectToAddPage}>ADD
+                </Button>
             </Box>
             {datasets.map((dataset, index) => (
                 <CollapseComponent key={index} dataset={dataset} onRemove={handleRemoveDataset} />
