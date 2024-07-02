@@ -16,14 +16,14 @@ import {
     DialogTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CopyButton from "./CopyButton";
+import CopyButton from './CopyButton';
 import {useNavigate} from "react-router-dom";
+
 
 const CollapseComponent = ({ dataset, onRemove }) => {
     const [expanded, setExpanded] = useState(false);
     const [open, setOpen] = useState(false);
-    const navigation= useNavigate();
-
+    const navigate = useNavigate();
 
     const toggleExpanded = () => {
         setExpanded(!expanded);
@@ -57,9 +57,13 @@ const CollapseComponent = ({ dataset, onRemove }) => {
             });
     };
 
+    // Creating a properly formatted JSON object to copy
+    const formattedData = { [dataset.name]: dataset };
+    const textToCopy = JSON.stringify(formattedData, null, 2);
+
     function redirectToDataPage() {
-        let path = '/data/' + dataset.name;
-        navigation(path)
+        const url = "/data/" + dataset.name;
+        navigate(url);
     }
 
     return (
@@ -77,7 +81,6 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             gap: 2,
                         }}
                     >
-
                         <Box
                             sx={{
                                 bgcolor: 'lightgray',
@@ -89,7 +92,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             }}
                         >
                             <Typography variant="subtitle1">Features</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0'}}>
+                            <List sx={{ height: '100%', overflowY: 'auto'}}>
                                 {Object.entries(dataset.features).map(([key, value]) => (
                                     <ListItem key={key}>
                                         <ListItemText primary={key} secondary={value} />
@@ -109,7 +112,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             }}
                         >
                             <Typography variant="subtitle1">Target</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0'}}>
+                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0' }}>
                                 {Object.entries(dataset.target).map(([key, value]) => (
                                     <ListItem key={key}>
                                         <ListItemText primary={key} secondary={value} />
@@ -129,7 +132,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             }}
                         >
                             <Typography variant="subtitle1">Other Properties</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0'}}>
+                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0' }}>
                                 {Object.entries(dataset).filter(([key]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
                                     <ListItem key={key}>
                                         <ListItemText primary={key} secondary={value === null || value === false ? "false" : value} />
@@ -150,8 +153,8 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             onClick={redirectToDataPage}>DATA
                         </Button>
 
-                        <Box>
-                            <CopyButton sx={{bgcolor: '#00e676', display: 'flex', gap: 2 }} textToCopy={JSON.stringify(dataset)} />
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2}}>
+                            <CopyButton sx={{ bgcolor: '#00e676' }} textToCopy={textToCopy} />
 
                             <Button
                                 sx={{
