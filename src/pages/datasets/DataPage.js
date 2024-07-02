@@ -1,57 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
+import React from 'react';
+import {useParams} from "react-router-dom";
 
-const DataPage = () => {
-    const [data, setData] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const params = useParams();
 
-    useEffect(() => {
-        console.log("params: ", params.datasetName)
-        fetch('/get/data/' + params.datasetName)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                setData(data);
-                setLoading(false);
-            })
-            .catch((error) => {
-                console.error('Error fetching data:', error);
-                setError(error);
-                setLoading(false);
-            });
-    }, [params]);
-
-    if (loading) {
-        return <p>Loading...</p>;
-    }
-
-    if (error) {
-        return <p>Error: {error.message}</p>;
-    }
+const FileDownload = () => {
+    const params = useParams()
+    const filePath = '../../../../flask/.venv/Lib/site-packages/Orange/' + params.datasetName + '.tab'
 
     return (
         <div>
-            <h1>Data</h1>
-            <ul>
-                {Object.entries(data).map(([k, attributes]) => (
-                    <li key={k}>
-                        <h2>{k}</h2>
-                        <ul>
-                            {Object.entries(attributes).map(([key, value]) => (
-                                <li key={key}>{`${key}: ${value}`}</li>
-                            ))}
-                        </ul>
-                    </li>
-                ))}
-            </ul>
+            <h1>Download .tab File</h1>
+            <a href={filePath} download target="_blank" rel="noopener noreferrer">
+                Open {params.datasetName + '.tab'} in a new tab
+            </a>
         </div>
     );
 };
 
-export default DataPage;
+export default FileDownload;
