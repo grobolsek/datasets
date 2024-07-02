@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Container } from '@mui/material';
 import CollapseComponent from '../../components/CollapseComponent';
-import { useNavigate } from "react-router-dom";
+import { useNavigate   } from "react-router-dom";
 
-const Info = () => {
+const InfoPage = () => {
     const [datasets, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    let navigate = useNavigate();
+    const navigation= useNavigate();
 
     useEffect(() => {
         // Fetch data from the /get/info endpoint
@@ -43,8 +42,8 @@ const Info = () => {
     }
 
     const redirectToAddPage = () => {
-        let path = '/edit_add'; // Assuming '/edit_add' is the correct route path
-        navigate(path);
+        let path = '/edit';
+        navigation(path)
     };
 
     return (
@@ -59,4 +58,4 @@ const Info = () => {
     );
 };
 
-export default Info;
+export default InfoPage;

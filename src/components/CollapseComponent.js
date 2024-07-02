@@ -68,7 +68,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             gap: 2,
                         }}
                     >
-                        {/* Features Container */}
+
                         <Box
                             sx={{
                                 bgcolor: 'lightgray',
@@ -89,7 +89,6 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             </List>
                         </Box>
 
-                        {/* Target Container */}
                         <Box
                             sx={{
                                 bgcolor: 'lightgray',
@@ -110,7 +109,6 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             </List>
                         </Box>
 
-                        {/* Other Properties Container */}
                         <Box
                             sx={{
                                 bgcolor: 'lightgray',
@@ -123,7 +121,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                         >
                             <Typography variant="subtitle1">Other Properties</Typography>
                             <List sx={{ height: '100%', overflowY: 'auto', padding: '0'}}>
-                                {Object.entries(dataset).filter(([key, value]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
+                                {Object.entries(dataset).filter(([key]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
                                     <ListItem key={key}>
                                         <ListItemText primary={key} secondary={value === null || value === false ? "false" : value} />
                                     </ListItem>

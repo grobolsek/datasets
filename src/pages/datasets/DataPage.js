@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const App = () => {
+const DataPage = () => {
     const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -51,4 +51,4 @@ const App = () => {
     );
 };
 
-export default App;
+export default DataPage;
