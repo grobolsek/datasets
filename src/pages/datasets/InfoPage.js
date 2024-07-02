@@ -20,6 +20,7 @@ const InfoPage = () => {
             .then((data) => {
                 setData(Object.entries(data).map(([key, value]) => ({ ...value, name: key })));
                 setLoading(false);
+                console.log(data)
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);

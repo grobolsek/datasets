@@ -25,6 +25,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
     const [open, setOpen] = useState(false);
     const navigate = useNavigate();
 
+
     const toggleExpanded = () => {
         setExpanded(!expanded);
     };
@@ -66,6 +67,16 @@ const CollapseComponent = ({ dataset, onRemove }) => {
         navigate(url);
     }
 
+    function evaluateValue(value) {
+        switch (value) {
+            case null: return "null";
+            case false: return "false";
+            case true: return "true";
+            case undefined: return "undefined";
+            default: return value
+        }
+    }
+
     return (
         <>
             <Accordion expanded={expanded} onChange={toggleExpanded}>
@@ -94,8 +105,8 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             <Typography variant="subtitle1">Features</Typography>
                             <List sx={{ height: '100%', overflowY: 'auto'}}>
                                 {Object.entries(dataset.features).map(([key, value]) => (
-                                    <ListItem key={key}>
-                                        <ListItemText primary={key} secondary={value} />
+                                    <ListItem key={key} sx={{ m: 0, p: 0 }}>
+                                        <ListItemText primary={key} secondary={evaluateValue(value)} />
                                     </ListItem>
                                 ))}
                             </List>
@@ -135,7 +146,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                             <List sx={{ height: '100%', overflowY: 'auto', padding: '0' }}>
                                 {Object.entries(dataset).filter(([key]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
                                     <ListItem key={key}>
-                                        <ListItemText primary={key} secondary={value === null || value === false ? "false" : value} />
+                                        <ListItemText primary={key} secondary={evaluateValue(value)} />
                                     </ListItem>
                                 ))}
                             </List>
