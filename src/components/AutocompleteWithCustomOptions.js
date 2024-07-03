@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
-import { Autocomplete, TextField, Box, Typography } from '@mui/material';
+import { Autocomplete, TextField, Box, Typography, Chip } from '@mui/material';
 
 const AutocompleteWithCustomOptions = ({ label, options }) => {
-    const [selectedOption, setSelectedOption] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState([]);
     const [customOptions, setCustomOptions] = useState(options);
+    const [inputValue, setInputValue] = useState('');
 
     const handleChange = (event, newValue) => {
-        if (typeof newValue === 'string') {
-            // Add a new custom option
-            setCustomOptions([...customOptions, { label: newValue }]);
-            setSelectedOption({ label: newValue });
-        } else if (newValue && newValue.inputValue) {
-            // Create a new value from the user input
-            setCustomOptions([...customOptions, { label: newValue.inputValue }]);
-            setSelectedOption({ label: newValue.inputValue });
+        if (newValue && newValue.length > 0) {
+            const lastValue = newValue[newValue.length - 1];
+            if (typeof lastValue === 'string') {
+                const newOption = { label: lastValue };
+                setCustomOptions([...customOptions, newOption]);
+                setSelectedOptions([...selectedOptions, newOption]);
+            } else if (lastValue && lastValue.inputValue) {
+                const newOption = { label: lastValue.inputValue };
+                setCustomOptions([...customOptions, newOption]);
+                setSelectedOptions([...selectedOptions, newOption]);
+            } else {
+                setSelectedOptions(newValue);
+            }
         } else {
-            setSelectedOption(newValue);
+            setSelectedOptions(newValue);
         }
     };
 
@@ -25,43 +31,39 @@ const AutocompleteWithCustomOptions = ({ label, options }) => {
                 {label}
             </Typography>
             <Autocomplete
-                options={customOptions}
-                getOptionLabel={(option) => {
-                    // Value selected with enter, right from the input
-                    if (typeof option === 'string') {
-                        return option;
-                    }
-                    // Add "xxx" option created dynamically
-                    if (option.inputValue) {
-                        return option.inputValue;
-                    }
-                    // Regular option
-                    return option.label;
-                }}
-                filterOptions={(options, params) => {
-                    const filtered = options.filter((option) =>
-                        option.label.toLowerCase().includes(params.inputValue.toLowerCase())
-                    );
-
-                    // Suggest the creation of a new value
-                    if (params.inputValue !== '' && !filtered.some((option) => option.label === params.inputValue)) {
-                        filtered.push({
-                            inputValue: params.inputValue,
-                            label: `Add "${params.inputValue}"`,
-                        });
-                    }
-
-                    return filtered;
-                }}
-                value={selectedOption}
-                onChange={handleChange}
+                multiple
                 freeSolo
+                options={customOptions}
+                value={selectedOptions}
+                onChange={handleChange}
+                inputValue={inputValue}
+                onInputChange={(event, newInputValue) => {
+                    setInputValue(newInputValue);
+                }}
+                renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                        <Chip
+                            variant="outlined"
+                            label={option.label}
+                            {...getTagProps({ index })}
+                        />
+                    ))
+                }
                 renderInput={(params) => (
                     <TextField
                         {...params}
                         variant="outlined"
                         label="Value"
-                        placeholder="Choose value"
+                        placeholder="Choose or add a value"
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' && inputValue) {
+                                const newOption = { label: inputValue };
+                                setCustomOptions([...customOptions, newOption]);
+                                setSelectedOptions([...selectedOptions, newOption]);
+                                setInputValue('');
+                                event.preventDefault();
+                            }
+                        }}
                     />
                 )}
             />
