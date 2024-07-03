@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider} from 'react-router-dom'
 
 import DataPage from "./pages/datasets/DataPage";
-import EditPage from "./pages/datasets/EditPage";
+import EditPage from "./pages/datasets/AddPage";
 import InfoPage from "./pages/datasets/InfoPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
