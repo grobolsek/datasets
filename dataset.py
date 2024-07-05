@@ -1,10 +1,22 @@
 import sqlite3
 import Orange
 
+
 class Dataset:
-    def __init__(self, name: str = None, title: str = None, description: str = None, collection: str = None,
-                 references: str = None, tags: list[str] = None, version: float = None, year: int = None,
-                 source: str = None):
+    def __init__(
+            self,
+            name: str = None,
+            title: str = None,
+            description: str = None,
+            collection: str = None,
+            references: str = None,
+            tags: list[str] = None,
+            version: float = None,
+            year: int = None,
+            source: str = None,
+            language: str = None,
+            domain: str = None,
+    ):
 
         self.dataset = {
             'name': name,
@@ -16,6 +28,8 @@ class Dataset:
             'version': version,
             'year': year,
             'source': source,
+            'language': language,
+            'domain': domain,
         }
 
     def get_from_database(self, name):
@@ -66,19 +80,45 @@ class Dataset:
             cursor = connection.cursor()
             data_table = Orange.data.Table(self.dataset['name'])
 
-            cursor.execute(f'SELECT * FROM "table" WHERE name = "{self.dataset['name']}"')
+            data = {
+                "instances": len(data_table),
+                "variables": len(data_table.domain),
+                "missing": data_table.domain.has_missing(),
+                "target": data_table.domain.class_var and ("categorical" if data_table.domain.class_var.is_discrete else "numeric")
+            }
+
+            all_data = data | self.dataset
+
+            cursor.execute("SELECT * FROM 'domains'")
+
+            if self.dataset['domain'] not in cursor.fetchall():
+                cursor.execute(f'INSERT INTO "domains" (domain_name) VALUES ("{all_data['domain']}")')
 
             cursor.execute(f"""
-                INSERT INTO "table"('name', 'title', 'description', 'collection', 'references', 'tags', 'version', 'year', 'source')
+                INSERT INTO "table"(name, title, description, collection, reference, version, year, instances, missing, variables, source, url, custom, domain_name, language)
                 VALUES(
-                    "{self.dataset['name']}",
-                    "{self.dataset['title']}",
-                    "{self.dataset['description']}",
-                    "{self.dataset['collection']}",
-                    "{self.dataset['references']}",
+                    "{all_data['name']}",
+                    "{all_data['title']}",
+                    "{all_data['description']}",
+                    "{all_data['collection']}",
+                    "{all_data['references']}",
+                    "{all_data['version']}",
+                    "{all_data['year']}",
+                    "{all_data['instances']}",
+                    "{all_data['missing']}",
+                    "{all_data['variables']}",
+                    "{all_data['source']}",
+                    "{all_data['url']}",
+                    "{all_data['custom']}",
+                    "{all_data['domain_name']}",
                 )
-            
             """)
 
-        finally:
-            pass
+            cursor.execute("""
+                
+            """)
+
+        except FileNotFoundError:
+            return {'File error': f"file {self.dataset['name']} not valid"}, 400
+        except sqlite3.Error:
+            return 400
