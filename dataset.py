@@ -1,5 +1,7 @@
 import sqlite3
 import Orange
+import yaml
+from copy import deepcopy
 
 
 class Dataset:
@@ -16,7 +18,11 @@ class Dataset:
             source: str = None,
             language: str = None,
             domain: str = None,
+            file: str = None,
+            custom: str = None,
     ):
+
+        self.file = file
 
         self.dataset = {
             'name': name,
@@ -30,7 +36,10 @@ class Dataset:
             'source': source,
             'language': language,
             'domain': domain,
+            'custom': custom
         }
+
+        self.combined_datasets = dict()
 
     def get_from_database(self, name):
         try:
@@ -45,7 +54,7 @@ class Dataset:
         except sqlite3.Error:
             return 400
 
-    def __update_version(self):
+    def _update_version(self):
         if self.dataset['version'] is None:
             return
 
@@ -60,13 +69,13 @@ class Dataset:
             connection = sqlite3.connect('database.db')
             cursor = connection.cursor()
 
-            self.__update_version()
+            self._update_version()
 
-            dont_edit = ['target', 'instances', 'missing', 'url']
+            dont_edit = ['target', 'instances', 'missing', 'url', 'variables']
 
             for key, value in self.dataset.items():
                 if (value is None) and (value not in dont_edit):
-                    cursor.execute(f'UPDATE "table" SET "{key}={value}" WHERE name = "{self.dataset['name']}"' )
+                    cursor.execute(f'UPDATE "table" SET "{key}={value}" WHERE name = "{self.dataset['name']}"')
 
             connection.commit()
             connection.close()
@@ -74,51 +83,53 @@ class Dataset:
         except sqlite3.Error:
             return 400
 
+    def combine(self):
+        data_table = Orange.data.Table(self.dataset['name'])
+
+        data = {
+            "instances": len(data_table),
+            "variables": len(data_table.domain),
+            "missing": data_table.domain.has_missing(),
+            "target": data_table.domain.class_var and (
+                "categorical" if data_table.domain.class_var.is_discrete else "numeric")
+        }
+
+        self.combined_datasets = data | self.dataset
+
     def add_dataset(self):
         try:
+            # insert file
+            Orange.data.Table(self.file)
+
+            # connect to database
             connection = sqlite3.connect('database.sqlite')
             cursor = connection.cursor()
-            data_table = Orange.data.Table(self.dataset['name'])
 
-            data = {
-                "instances": len(data_table),
-                "variables": len(data_table.domain),
-                "missing": data_table.domain.has_missing(),
-                "target": data_table.domain.class_var and ("categorical" if data_table.domain.class_var.is_discrete else "numeric")
-            }
+            # add elements that are calculated
+            self.combine()
 
-            all_data = data | self.dataset
-
+            # get currently available domain
             cursor.execute("SELECT * FROM 'domains'")
 
+            # if domain doesn't exist add one
             if self.dataset['domain'] not in cursor.fetchall():
-                cursor.execute(f'INSERT INTO "domains" (domain_name) VALUES ("{all_data['domain']}")')
+                cursor.execute(f'INSERT INTO "domains" (domain_name) VALUES ("{self.combined_datasets['domain']}")')
 
-            cursor.execute(f"""
-                INSERT INTO "table"(name, title, description, collection, reference, version, year, instances, missing, variables, source, url, custom, domain_name, language)
-                VALUES(
-                    "{all_data['name']}",
-                    "{all_data['title']}",
-                    "{all_data['description']}",
-                    "{all_data['collection']}",
-                    "{all_data['references']}",
-                    "{all_data['version']}",
-                    "{all_data['year']}",
-                    "{all_data['instances']}",
-                    "{all_data['missing']}",
-                    "{all_data['variables']}",
-                    "{all_data['source']}",
-                    "{all_data['url']}",
-                    "{all_data['custom']}",
-                    "{all_data['domain_name']}",
-                )
-            """)
+            # insert data
+            columns = ', '.join(self.combined_datasets.keys())
+            placeholders = ', '.join(['?'] * len(self.combined_datasets))
+            sql = f'INSERT INTO my_table ({columns}) VALUES ({placeholders})'
 
-            cursor.execute("""
-                
-            """)
+            cursor.execute(sql, tuple(self.combined_datasets.values()))
 
         except FileNotFoundError:
             return {'File error': f"file {self.dataset['name']} not valid"}, 400
         except sqlite3.Error:
             return 400
+
+    def convert_to_json(self):
+        self.combine()
+        temp = deepcopy(self.combined_datasets)
+        del temp['custom']
+        return temp | yaml.safe_load(self.combined_datasets['custom'])
+
