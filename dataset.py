@@ -132,4 +132,3 @@ class Dataset:
         temp = deepcopy(self.combined_datasets)
         del temp['custom']
         return temp | yaml.safe_load(self.combined_datasets['custom'])
-
