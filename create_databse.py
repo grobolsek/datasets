@@ -37,6 +37,7 @@ def create_database() -> None:
             db_custom TEXT,
             db_target TEXT,
             db_location TEXT,
+            db_size INTEGER,
             PRIMARY KEY (db_name),
             FOREIGN KEY(db_language) REFERENCES languages(language),
             FOREIGN KEY (db_domain) REFERENCES domains(domain)

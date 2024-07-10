@@ -3,14 +3,8 @@ from copy import deepcopy
 
 
 class Database:
-    def __init__(self, dataset: dict, instances: int = None, variables: int = None, missing: bool = None,
-                 target: str = None):
-        self.extended_datasets = {
-                                     'instances': instances,
-                                     'variables': variables,
-                                     'missing': missing,
-                                     'target': target,
-                                 } | dataset
+    def __init__(self, dataset: dict):
+        self.extended_datasets = dataset
         self.connection = sqlite3.connect('datasets.sqlite')
         self.connection.row_factory = sqlite3.Row
         self.cursor = self.connection.cursor()
@@ -128,11 +122,18 @@ class Database:
                             )
 
     def get_value(self):
-        values = self.cursor.execute("""
+        self.cursor.execute("""
             SELECT * FROM datasets
-            JOIN main.datasets_tags ON datasets_tags.db_name = datasets.db_name
+            JOIN datasets_tags ON datasets_tags.db_name = datasets.db_name
             WHERE datasets.db_name = ?
-        """, (self.extended_datasets['name'],)).fetchone()
+        """, (self.extended_datasets['name'],))
+        values = self.cursor.fetchone()
         self.extended_datasets.update(values)
         return values
 
+    def get_all(self):
+        return self.cursor.execute('SELECT * FROM datasets').fetchall()
+
+    def close(self):
+        self.cursor.close()
+        self.connection.close()

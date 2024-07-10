@@ -22,8 +22,21 @@ class Dataset:
             custom: str = None,
             url: str = None,
             location: str = None,
+            instances: int = None,
+            variables: int = None,
+            missing: bool = None,
+            target: str = None,
+            size: int = None,
             **kwargs,
     ):
+        self.calculated = {
+            'instances': instances,
+            'variables': variables,
+            'missing': missing,
+            'target': target,
+            'size': size,
+        }
+
         self.file = file
         self.kwargs = kwargs
 
@@ -61,12 +74,17 @@ class Dataset:
 
         target = table.domain.class_var and ("categorical" if table.domain.class_var.is_discrete else "numeric")
 
+        if self.calculated is None:
+            self.calculated = {
+                'instances': len(table),
+                'variables': len(table.domain),
+                'missing': table.has_missing(),
+                'target': target,
+                # todo: get size
+            }
+
         database = Database(
-            instances=len(table),
-            variables=len(table.domain),
-            missing=table.has_missing(),
-            target=target,
-            dataset=self.dataset
+            dataset=self.dataset | self.calculated
         )
 
         database.add()
@@ -83,7 +101,8 @@ class Dataset:
         return changed_values
 
     def edit(self, name: str, **kwargs):
-        old = Database(dataset={'name': name}).get_value()
+        old_db = Database(dataset={'name': name})
+        old = old_db.get_value()
         new = Dataset(**kwargs)
 
         changed = self.differences(old, new.get_value())
@@ -93,4 +112,13 @@ class Dataset:
     def get_value(self):
         return self.dataset
 
-
+    @staticmethod
+    def get_all():
+        rows = Database.get_all(Database(dict()))
+        res = []
+        for row in rows:
+            row = dict(row)
+            if row['db_references'] is not None:
+                row['db_references'] = row['db_references'].split('\n')
+            res.append(row)
+        return res
