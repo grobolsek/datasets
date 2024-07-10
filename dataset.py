@@ -1,7 +1,7 @@
-import sqlite3
 import Orange
 import yaml
-from copy import deepcopy
+
+from database import Database
 
 
 class Dataset:
@@ -20,9 +20,12 @@ class Dataset:
             domain: str = None,
             file: str = None,
             custom: str = None,
+            url: str = None,
+            location: str = None,
+            **kwargs,
     ):
-
         self.file = file
+        self.kwargs = kwargs
 
         self.dataset = {
             'name': name,
@@ -36,99 +39,58 @@ class Dataset:
             'source': source,
             'language': language,
             'domain': domain,
-            'custom': custom
+            'custom': custom,
+            'url': url,
+            'location': location,
         }
+        self.kwargs_to_yaml()
 
-        self.combined_datasets = dict()
+    def kwargs_to_yaml(self):
+        if self.kwargs is not None:
+            self.dataset['custom'] = yaml.dump(self.kwargs, default_flow_style=False)
 
-    def get_from_database(self, name):
-        try:
-            connection = sqlite3.connect('database.db')
-            connection.row_factory = sqlite3.Row
-            cursor = connection.cursor()
-            cursor.execute(f'SELECT * FROM "table" WHERE name = "{name}"')
-            table = cursor.fetchone()
-            self.dataset = table
+    def add(self):
+        table = None
 
-            return 200
-        except sqlite3.Error:
-            return 400
+        if self.file is None:
+            table = Orange.data.Table(self.dataset['url'])
 
-    def _update_version(self):
-        if self.dataset['version'] is None:
-            return
+        else:
+            # todo: save file
+            pass
 
-        update_to = self.dataset['version'] + 1
-        primary, secondary = str(self.dataset['version']).split('.')
-        self.dataset['version'] = float(f'{int(primary) + update_to}.{int(secondary) + 1}')
+        target = table.domain.class_var and ("categorical" if table.domain.class_var.is_discrete else "numeric")
 
-    def edit_dataset(self):
-        try:
-            if self.dataset['name'] is None:
-                return 400
-            connection = sqlite3.connect('database.db')
-            cursor = connection.cursor()
+        database = Database(
+            instances=len(table),
+            variables=len(table.domain),
+            missing=table.has_missing(),
+            target=target,
+            dataset=self.dataset
+        )
 
-            self._update_version()
+        database.add()
 
-            dont_edit = ['target', 'instances', 'missing', 'url', 'variables']
+    @staticmethod
+    def differences(old, new):
+        changed_values = {}
 
-            for key, value in self.dataset.items():
-                if (value is None) and (value not in dont_edit):
-                    cursor.execute(f'UPDATE "table" SET "{key}={value}" WHERE name = "{self.dataset['name']}"')
+        for key in new:
+            # Check if key exists in old_dict and values are different
+            if key in old and old[key] != new[key]:
+                changed_values[key] = new[key]
 
-            connection.commit()
-            connection.close()
-            return 200
-        except sqlite3.Error:
-            return 400
+        return changed_values
 
-    def combine(self):
-        data_table = Orange.data.Table(self.dataset['name'])
+    def edit(self, name: str, **kwargs):
+        old = Database(dataset={'name': name}).get_value()
+        new = Dataset(**kwargs)
 
-        data = {
-            "instances": len(data_table),
-            "variables": len(data_table.domain),
-            "missing": data_table.domain.has_missing(),
-            "target": data_table.domain.class_var and (
-                "categorical" if data_table.domain.class_var.is_discrete else "numeric")
-        }
+        changed = self.differences(old, new.get_value())
 
-        self.combined_datasets = data | self.dataset
+        old.edit(changed)
 
-    def add_dataset(self):
-        try:
-            # insert file
-            Orange.data.Table(self.file)
+    def get_value(self):
+        return self.dataset
 
-            # connect to database
-            connection = sqlite3.connect('database.sqlite')
-            cursor = connection.cursor()
 
-            # add elements that are calculated
-            self.combine()
-
-            # get currently available domain
-            cursor.execute("SELECT * FROM 'domains'")
-
-            # if domain doesn't exist add one
-            if self.dataset['domain'] not in cursor.fetchall():
-                cursor.execute(f'INSERT INTO "domains" (domain_name) VALUES ("{self.combined_datasets['domain']}")')
-
-            # insert data
-            columns = ', '.join(self.combined_datasets.keys())
-            placeholders = ', '.join(['?'] * len(self.combined_datasets))
-            sql = f'INSERT INTO my_table ({columns}) VALUES ({placeholders})'
-
-            cursor.execute(sql, tuple(self.combined_datasets.values()))
-
-        except FileNotFoundError:
-            return {'File error': f"file {self.dataset['name']} not valid"}, 400
-        except sqlite3.Error:
-            return 400
-
-    def convert_to_json(self):
-        self.combine()
-        temp = deepcopy(self.combined_datasets)
-        del temp['custom']
-        return temp | yaml.safe_load(self.combined_datasets['custom'])
