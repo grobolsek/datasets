@@ -3,7 +3,6 @@ import {Box, Button, Container, TextField, Typography} from "@mui/material";
 import AutocompleteWithCustomOptions from "../../components/AutocompleteWithCustomOptions";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import VisuallyHiddenInput from "../../components/VisuallyHiddenInput";
-import {Title} from "@mui/icons-material";
 
 
 const AddPage = () => {

@@ -16,30 +16,24 @@ import {
     DialogTitle
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CopyButton from './CopyButton';
-import {useNavigate} from "react-router-dom";
-
+import CopyButton from './CopyButton'; // Import if you have a CopyButton component
+import EditDialog from './EditDialog'; // Import the new EditDialog component
 
 const CollapseComponent = ({ dataset, onRemove }) => {
-    const [expanded, setExpanded] = useState(false);
-    const [open, setOpen] = useState(false);
-    const navigate = useNavigate();
-
-
-    const toggleExpanded = () => {
-        setExpanded(!expanded);
-    };
+    const [openRemoveDialog, setOpenRemoveDialog] = useState(false);
+    const [openEditDialog, setOpenEditDialog] = useState(false);
+    const [hovered, setHovered] = useState(false);
 
     const handleRemoveClick = () => {
-        setOpen(true);
+        setOpenRemoveDialog(true);
     };
 
-    const handleClose = () => {
-        setOpen(false);
+    const handleCloseRemoveDialog = () => {
+        setOpenRemoveDialog(false);
     };
 
     const handleConfirmRemove = () => {
-        fetch(`/remove/${dataset.name}`, {
+        fetch(`/remove/${dataset.db_name}`, {
             method: 'DELETE',
         })
             .then((response) => {
@@ -50,165 +44,154 @@ const CollapseComponent = ({ dataset, onRemove }) => {
             })
             .then((data) => {
                 console.log(data.message);
-                onRemove(dataset.name);
-                handleClose();
+                onRemove(dataset.db_name); // Call parent's remove function
+                handleCloseRemoveDialog();
             })
             .catch((error) => {
                 console.error('Error removing dataset:', error);
             });
     };
 
-    // Creating a properly formatted JSON object to copy
-    const formattedData = { [dataset.name]: dataset };
-    const textToCopy = JSON.stringify(formattedData, null, 2);
+    const handleEditClick = (e) => {
+        e.stopPropagation();
+        setOpenEditDialog(true);
+    };
 
-    function redirectToDataPage() {
-        const url = "/data/" + dataset.name;
-        navigate(url);
-    }
+    const handleEditSave = (updatedDataset) => {
+        fetch(`/edit/${dataset.db_name}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedDataset),
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log(data.message);
+                // Update the local state if necessary
+            })
+            .catch((error) => {
+                console.error('Error editing dataset:', error);
+            });
+    };
 
-    function evaluateValue(value) {
-        switch (value) {
-            case null: return "null";
-            case false: return "false";
-            case true: return "true";
-            case undefined: return "undefined";
-            default: return value
-        }
-    }
+    // Function to render key-value pairs of dataset properties in two columns
+    const renderDatasetProperties = () => {
+        const properties = Object.keys(dataset).filter(key => key.startsWith('db_') && key !== 'db_name');
+        const midPoint = Math.ceil(properties.length / 2);
+        const firstColumn = properties.slice(0, midPoint);
+        const secondColumn = properties.slice(midPoint);
+
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <Box sx={{ flex: 1 }}>
+                    <List sx={{ bgcolor: 'lightgray', minWidth: 200 }}>
+                        {firstColumn.map(key => (
+                            <ListItem key={key}>
+                                <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
+                            </ListItem>
+                        ))}
+                    </List>
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <List sx={{ bgcolor: 'lightgray', minWidth: 200 }}>
+                        {secondColumn.map(key => (
+                            <ListItem key={key}>
+                                <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
+                            </ListItem>
+                        ))}
+                    </List>
+                </Box>
+            </Box>
+        );
+    };
 
     return (
         <>
-            <Accordion expanded={expanded} onChange={toggleExpanded}>
-                <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls="panel-content">
-                    <Typography variant="h6">{dataset.name}</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
+            <Accordion
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+            >
+                <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls="panel-content"
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}
+                >
+                    <Typography variant="h6" sx={{ flexGrow: 1 }}>{dataset.db_name}</Typography>
                     <Box
                         sx={{
                             display: 'flex',
-                            flexDirection: 'row',
-                            flexWrap: 'wrap',
-                            gap: 2,
+                            alignItems: 'center',
+                            opacity: hovered ? 1 : 0,
+                            transition: 'opacity 0.4s ease',
+                            mx: 2
                         }}
                     >
-                        <Box
-                            sx={{
-                                bgcolor: 'lightgray',
-                                p: 2,
-                                borderRadius: 4,
-                                minWidth: 160,
-                                flex: '1 0 auto',
-                                mb: 2,
-                            }}
-                        >
-                            <Typography variant="subtitle1">Features</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto'}}>
-                                {Object.entries(dataset.features).map(([key, value]) => (
-                                    <ListItem key={key} sx={{ m: 0, p: 0 }}>
-                                        <ListItemText primary={key} secondary={evaluateValue(value)} />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Box>
-
-                        <Box
-                            sx={{
-                                bgcolor: 'lightgray',
-                                p: 2,
-                                borderRadius: 4,
-                                minWidth: 160,
-                                flex: '1 0 auto',
-                                mb: 2,
-                            }}
-                        >
-                            <Typography variant="subtitle1">Target</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0' }}>
-                                {Object.entries(dataset.target).map(([key, value]) => (
-                                    <ListItem key={key}>
-                                        <ListItemText primary={key} secondary={value} />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Box>
-
-                        <Box
-                            sx={{
-                                bgcolor: 'lightgray',
-                                p: 2,
-                                borderRadius: 4,
-                                minWidth: 160,
-                                flex: '1 0 auto',
-                                mb: 2,
-                            }}
-                        >
-                            <Typography variant="subtitle1">Other Properties</Typography>
-                            <List sx={{ height: '100%', overflowY: 'auto', padding: '0' }}>
-                                {Object.entries(dataset).filter(([key]) => !['features', 'target', 'name'].includes(key)).map(([key, value]) => (
-                                    <ListItem key={key}>
-                                        <ListItemText primary={key} secondary={evaluateValue(value)} />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between'}}>
                         <Button
                             sx={{
-                                bgcolor: 'gray',
+                                bgcolor: '#ff9100',
                                 ':hover': {
-                                    bgcolor: 'darkgray'
-                                }
+                                    bgcolor: '#b26500',
+                                },
+                                marginRight: '8px',
                             }}
                             variant="contained"
-                            onClick={redirectToDataPage}>DATA
+                            onClick={handleEditClick}
+                        >
+                            EDIT
                         </Button>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2}}>
-                            <CopyButton sx={{ bgcolor: '#00e676' }} textToCopy={textToCopy} />
-
-                            <Button
-                                sx={{
-                                    bgcolor: '#ff9100',
-                                    ':hover': {
-                                        bgcolor: '#b26500'
-                                    }
-                                }}
-                                variant="contained">EDIT
-                            </Button>
-
-                            <Button
-                                sx={{
-                                    bgcolor: '#d50000',
-                                    ':hover': {
-                                        bgcolor: '#950000'
-                                    }
-                                }}
-                                variant="contained"
-                                onClick={handleRemoveClick}>REMOVE
-                            </Button>
-                        </Box>
+                        <Button
+                            sx={{
+                                bgcolor: '#d50000',
+                                ':hover': {
+                                    bgcolor: '#950000',
+                                },
+                                marginRight: '8px',
+                            }}
+                            variant="contained"
+                            onClick={(e) => { e.stopPropagation(); handleRemoveClick(); }}
+                        >
+                            REMOVE
+                        </Button>
+                        <CopyButton
+                            textToCopy={JSON.stringify(dataset, null, 2)}
+                            onClick={(e) => { e.stopPropagation(); }}
+                        />
                     </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                    {renderDatasetProperties()}
                 </AccordionDetails>
             </Accordion>
 
-            <Dialog
-                open={open}
-                onClose={handleClose}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-            >
-                <DialogTitle id="alert-dialog-title">{"Confirm Remove"}</DialogTitle>
+            <Dialog open={openRemoveDialog} onClose={handleCloseRemoveDialog}>
+                <DialogTitle>Confirm Remove</DialogTitle>
                 <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
-                        Are you sure you want to remove the dataset "{dataset.name}"?
+                    <DialogContentText>
+                        Are you sure you want to remove the dataset "{dataset.db_name}"?
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleClose} color="primary">Cancel</Button>
-                    <Button onClick={handleConfirmRemove} color="secondary" autoFocus>Confirm</Button>
+                    <Button onClick={handleCloseRemoveDialog} color="primary">
+                        Cancel
+                    </Button>
+                    <Button onClick={handleConfirmRemove} color="secondary" autoFocus>
+                        Confirm
+                    </Button>
                 </DialogActions>
             </Dialog>
+
+            <EditDialog
+                open={openEditDialog}
+                onClose={() => setOpenEditDialog(false)}
+                dataset={dataset}
+                onSave={handleEditSave}
+            />
         </>
     );
 };
