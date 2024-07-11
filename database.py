@@ -116,16 +116,6 @@ class Database:
         sql_query = f"UPDATE datasets SET {set_clause} WHERE db_name = ?"
         self._execute_with_retry(sql_query, tuple(values))
 
-        if changes.get('db_name') is not None:
-            self._execute_with_retry('''
-                UPDATE datasets SET db_name = ? 
-                WHERE db_name = ? ''', (changes['db_name'], self.extended_datasets['name']))
-            self.connection.commit()
-            self._execute_with_retry('''
-                UPDATE datasets_tags SET db_name = ?
-                WHERE db_name = ?
-            ''', (changes['db_name'], self.extended_datasets['name']))
-
         self.connection.commit()
         self.close()
 
@@ -153,8 +143,8 @@ class Database:
             return None
 
     def get_all(self):
-        query = """
-                SELECT d.*, GROUP_CONCAT(t.tag, ', ') as tags
+        query = f"""
+                SELECT *, GROUP_CONCAT(t.tag, ', ') as db_tags
                 FROM datasets d
                 LEFT JOIN datasets_tags dt ON d.db_name = dt.db_name
                 LEFT JOIN tags t ON dt.tag_id = t.tag
@@ -188,3 +178,8 @@ class Database:
             logging.warning(f'Dataset {self.extended_datasets['name']} already exists in database')
             return True
         return False
+
+    def get_tables(self, table_name, column_name):
+        self._execute_with_retry(f'SELECT {column_name} FROM {table_name}')
+        values = self.cursor.fetchall()
+        return [j for i in values for j in i]

@@ -15,9 +15,14 @@ def get_datasets():
     return Dataset.get_all()
 
 
+@app.route('/datasets/table/<string:table_name>/<string:column_name>')
+def get_table(column_name, table_name):
+    return Dataset.get_table(column_name, table_name), 200
+
+
 @app.route('/datasets/get/<string:dataset_name>')
 def get_datasets_single(dataset_name):
-    return Dataset.get_value()
+    return Dataset(name=dataset_name).get_value(), 200
 
 
 @app.route('/datasets/remove/<dataset_name>', methods=['DELETE'])

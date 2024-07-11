@@ -82,3 +82,7 @@ class Dataset:
         primary, secondary = self.dataset['version'].split('.')
         secondary = int(secondary) + 1
         return f'{primary}.{secondary}'
+
+    @staticmethod
+    def get_table(column_name, table_name):
+        return Database(dataset={}).get_tables(column_name=column_name, table_name=table_name)
