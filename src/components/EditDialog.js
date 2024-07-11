@@ -1,61 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import {
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    TextField,
-    Button
-} from '@mui/material';
+// EditDialog.js
+import React, { useState } from 'react';
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField, Box } from '@mui/material';
 
 const EditDialog = ({ open, onClose, dataset, onSave }) => {
-    const [formData, setFormData] = useState({ ...dataset });
-
-    useEffect(() => {
-        setFormData({ ...dataset }); // Reset form data when dataset changes
-    }, [dataset]);
+    const [editedData, setEditedData] = useState(dataset);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setEditedData(prevData => ({
+            ...prevData,
+            [name]: value
+        }));
     };
 
     const handleSave = () => {
-        // Determine changed fields
-        const changedFields = {};
-        for (const key in formData) {
-            if (formData[key] !== dataset[key]) {
-                changedFields[key] = formData[key];
-            }
-        }
-
-        onSave(changedFields); // Send only changed fields to parent component
+        onSave(editedData);
         onClose();
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth>
-            <DialogTitle>Edit Dataset: {dataset.db_name}</DialogTitle>
+        <Dialog open={open} onClose={onClose}>
+            <DialogTitle>Edit Dataset</DialogTitle>
             <DialogContent>
-                {Object.keys(dataset).filter(key => key.startsWith('db_')).map((key) => (
-                    <TextField
-                        key={key}
-                        name={key}
-                        label={key.substring(3)}
-                        value={formData[key] || ''}
-                        onChange={handleChange}
-                        margin="dense"
-                        fullWidth
-                    />
+                {Object.keys(dataset).map(key => (
+                    <Box key={key} sx={{ my: 1 }}>
+                        <TextField
+                            label={key}
+                            name={key}
+                            value={editedData[key] || ''}
+                            onChange={handleChange}
+                            fullWidth
+                        />
+                    </Box>
                 ))}
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose} color="primary">
-                    Cancel
-                </Button>
-                <Button onClick={handleSave} color="primary">
-                    Save
-                </Button>
+                <Button onClick={onClose} color="primary">Cancel</Button>
+                <Button onClick={handleSave} color="secondary">Save</Button>
             </DialogActions>
         </Dialog>
     );

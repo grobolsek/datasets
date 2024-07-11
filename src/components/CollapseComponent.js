@@ -1,3 +1,4 @@
+// CollapseComponent.js
 import React, { useState } from 'react';
 import {
     Accordion,
@@ -24,7 +25,8 @@ const CollapseComponent = ({ dataset, onRemove }) => {
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [hovered, setHovered] = useState(false);
 
-    const handleRemoveClick = () => {
+    const handleRemoveClick = (e) => {
+        e.stopPropagation();
         setOpenRemoveDialog(true);
     };
 
@@ -96,6 +98,12 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                                 <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
                             </ListItem>
                         ))}
+                        {/* Render tags in the first column */}
+                        {dataset.tags && (
+                            <ListItem>
+                                <ListItemText primary="Tags" secondary={dataset.tags.join(', ')} />
+                            </ListItem>
+                        )}
                     </List>
                 </Box>
                 <Box sx={{ flex: 1 }}>
@@ -154,7 +162,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                                 marginRight: '8px',
                             }}
                             variant="contained"
-                            onClick={(e) => { e.stopPropagation(); handleRemoveClick(); }}
+                            onClick={handleRemoveClick}
                         >
                             REMOVE
                         </Button>
@@ -165,6 +173,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                     </Box>
                 </AccordionSummary>
                 <AccordionDetails>
+                    {/* Render dataset properties and tags */}
                     {renderDatasetProperties()}
                 </AccordionDetails>
             </Accordion>

@@ -1,37 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Autocomplete, TextField, Chip } from '@mui/material';
 
-const AutocompleteWithCustomOptions = ({ placeholder, label, options }) => {
-    const [selectedOptions, setSelectedOptions] = useState([]);
-    const [customOptions, setCustomOptions] = useState(options);
+const AutocompleteWithCustomOptions = ({ placeholder, label, tableName, value, onChange }) => {
+    const [customOptions, setCustomOptions] = useState([]);
     const [inputValue, setInputValue] = useState('');
 
+    useEffect(() => {
+        // Fetch existing tags for the specified tableName
+        fetch(`/datasets/table/${tableName}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tags');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                // Prepare options with fetched tags
+                const fetchedOptions = data.map(tag => ({ label: tag }));
+                setCustomOptions(fetchedOptions);
+            })
+            .catch((error) => {
+                console.error('Error fetching tags:', error);
+            });
+    }, [tableName]);
+
     const handleChange = (event, newValue) => {
-        if (newValue && newValue.length > 0) {
-            const lastValue = newValue[newValue.length - 1];
-            if (typeof lastValue === 'string') {
-                const newOption = { label: lastValue };
-                setCustomOptions([...customOptions, newOption]);
-                setSelectedOptions([...selectedOptions, newOption]);
-            } else if (lastValue && lastValue.inputValue) {
-                const newOption = { label: lastValue.inputValue };
-                setCustomOptions([...customOptions, newOption]);
-                setSelectedOptions([...selectedOptions, newOption]);
-            } else {
-                setSelectedOptions(newValue);
+        const newTags = newValue.map(option => {
+            if (typeof option === 'string') {
+                return option;
+            } else if (option && option.label) {
+                return option.label;
             }
-        } else {
-            setSelectedOptions(newValue);
-        }
+            return null;
+        }).filter(tag => tag !== null);
+
+        onChange(newTags);
     };
 
     return (
         <Autocomplete
-            sx={{ width: "300px" }}
             multiple
             freeSolo
             options={customOptions}
-            value={selectedOptions}
+            getOptionLabel={(option) => option.label || ''}
+            value={value.map(tag => ({ label: tag }))}
             onChange={handleChange}
             inputValue={inputValue}
             onInputChange={(event, newInputValue) => {
@@ -52,15 +64,6 @@ const AutocompleteWithCustomOptions = ({ placeholder, label, options }) => {
                     variant="outlined"
                     label={label}
                     placeholder={placeholder}
-                    onKeyDown={(event) => {
-                        if (event.key === 'Enter' && inputValue) {
-                            const newOption = { label: inputValue };
-                            setCustomOptions([...customOptions, newOption]);
-                            setSelectedOptions([...selectedOptions, newOption]);
-                            setInputValue('');
-                            event.preventDefault();
-                        }
-                    }}
                 />
             )}
         />
