@@ -29,10 +29,8 @@ def remove_dataset(dataset_name):
 def edit_dataset(dataset_name):
     changes = request.get_json()
     print(changes)
-    try:
-        Dataset.edit(dataset_name, changes)
-    except Exception as e:
-        return {"message": str(e)}, 400
+    d = Dataset(name=dataset_name)
+    d.edit(**changes)
 
 
 if __name__ == '__main__':

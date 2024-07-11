@@ -89,25 +89,9 @@ class Dataset:
 
         database.add()
 
-    @staticmethod
-    def differences(old, new):
-        changed_values = {}
-
-        for key in new:
-            # Check if key exists in old_dict and values are different
-            if key in old and old[key] != new[key]:
-                changed_values[key] = new[key]
-
-        return changed_values
-
-    def edit(self, name: str, **kwargs):
-        old_db = Database(dataset={'name': name})
-        old = old_db.get_value()
-        new = Dataset(**kwargs)
-
-        changed = self.differences(old, new.get_value())
-
-        old.edit(changed)
+    def edit(self, **kwargs):
+        old = Database(dataset={'name': self.dataset['name']})
+        old.edit(kwargs)
 
     def get_value(self):
         return self.dataset

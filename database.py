@@ -8,6 +8,7 @@ class Database:
         self.connection = sqlite3.connect('datasets.sqlite')
         self.connection.row_factory = sqlite3.Row
         self.cursor = self.connection.cursor()
+        self.cursor.execute("PRAGMA foreign_keys = ON")
 
     def exist_add(self, table: str, column: str, value):
         """
@@ -53,7 +54,6 @@ class Database:
             self.connection.commit()
         except sqlite3.IntegrityError:
             self.cursor.close()
-            self.connection.close()
             print(f"Error: {value} already exists in table {table}")
             pass
 
@@ -96,16 +96,11 @@ class Database:
             return e, 400
 
     def edit(self, changes: dict):
-        set_values = str([f'{i} = ?' for i in changes.values()[1:-1]])
-        sql = f'UPDATE datasets SET {set_values} WHERE db_name = ?'
-
-        self.cursor.execute(sql, (*changes.values(), self.extended_datasets['name']))
-
-        if 'languages' in changes.keys():
+        if 'db_languages' in changes.keys():
             self.exists_update('languages', 'language', changes['language'])
-        if 'domain' in changes.keys():
+        if 'db_domain' in changes.keys():
             self.exists_update('domains', 'domain', changes['domain'])
-        if 'tags' in changes.keys():
+        if 'db_tags' in changes.keys():
             for tag in changes['tags']:
                 self.exists_update('tags', 'tag', tag)
                 self.cursor.execute('UPDATE datasets_tags SET tag_id = ? WHERE db_name = ? AND tag_id = ?',
@@ -114,12 +109,18 @@ class Database:
                                         self.extended_datasets['name'],
                                         self.extended_datasets['tag'])
                                     )
+
+        set_clause = ', '.join([f"{col} = ?" for col in changes.keys()])
+        values = list(changes.values())
+        values.append(self.extended_datasets['name'])
+
+        sql_query = f"UPDATE datasets SET {set_clause} WHERE db_name = ?"
+
+        self.cursor.execute(sql_query, tuple(values))
+
         self.connection.commit()
-        self.cursor.execute('UPDATE datasets_tags SET db_name = ? WHERE db_name = ?',
-                            (
-                                changes['name'],
-                                self.extended_datasets['name'])
-                            )
+        self.cursor.close()
+        self.connection.close()
 
     def get_value(self):
         self.cursor.execute("""
