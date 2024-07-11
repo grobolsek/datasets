@@ -15,6 +15,11 @@ def get_datasets():
     return Dataset.get_all()
 
 
+@app.route('/datasets/get/<string:dataset_name>')
+def get_datasets_single(dataset_name):
+    return Dataset.get_value()
+
+
 @app.route('/datasets/remove/<dataset_name>', methods=['DELETE'])
 def remove_dataset(dataset_name):
     connection = sqlite3.connect('datasets.sqlite')
@@ -28,9 +33,12 @@ def remove_dataset(dataset_name):
 @app.route('/datasets/edit/<dataset_name>', methods=['PUT'])
 def edit_dataset(dataset_name):
     changes = request.get_json()
-    print(changes)
-    d = Dataset(name=dataset_name)
-    d.edit(**changes)
+    try:
+        d = Dataset(name=dataset_name)
+        d.edit(**changes)
+        return {"message": f"Dataset '{dataset_name}' has been edited successfully."}, 200
+    except Exception as e:
+        return {"message": str(e)}, 400
 
 
 if __name__ == '__main__':

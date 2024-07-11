@@ -25,7 +25,7 @@ def create_database() -> None:
             db_description TEXT,
             db_collection TEXT,
             db_references TEXT,
-            db_version REAL,
+            db_version TEXT,
             db_year INTEGER,
             db_instances INTEGER,
             db_missing INTEGER,
