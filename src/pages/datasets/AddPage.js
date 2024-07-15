@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {Box, Button, Container, TextField, Typography} from "@mui/material";
-import AutocompleteWithCustomOptions from "../../components/AutocompleteWithCustomOptions";
+import AutocompleteWithCustomOptions from "../../components/MultiAutoComplete";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import VisuallyHiddenInput from "../../components/VisuallyHiddenInput";
 
