@@ -32,22 +32,12 @@ class Database:
                     logging.error(f"Failed to execute query: {query} with params: {params}")
                     raise
 
-    def exist_add(self, table: str, column: str, value):
-        """
-        Checks if a record exists, else adds it to the table.
-        """
-        try:
-            self._execute_with_retry(f"SELECT 1 FROM {table} WHERE {column} = ?", (value,))
-            if not self.cursor.fetchone():
-                self._execute_with_retry(f"INSERT INTO {table} ({column}) VALUES (?)", (value,))
-            self.connection.commit()
-        except sqlite3.IntegrityError:
-            logging.error(f"Error: {value} already exists in table {table}")
-
     def exists_update(self, table: str, column: str, value):
         """
         Checks if a record exists, if not inserts it, if exists updates it.
         """
+        if value is None:
+            return
         try:
             self._execute_with_retry(f"SELECT 1 FROM {table} WHERE {column} = ?", (value,))
             existing_record = self.cursor.fetchone()
@@ -67,9 +57,9 @@ class Database:
     def add(self):
         try:
             for tag in self.extended_datasets['tags']:
-                self.exist_add('tags', 'tag', tag)
-            self.exist_add('domains', 'domain', self.extended_datasets['domain'])
-            self.exist_add('languages', 'language', self.extended_datasets['language'])
+                self.exists_update('tags', 'tag', tag)
+            self.exists_update('domains', 'domain', self.extended_datasets['domain'])
+            self.exists_update('languages', 'language', self.extended_datasets['language'])
 
             if self.extended_datasets['references'] is not None:
                 self.extended_datasets['references'] = '\n'.join(self.extended_datasets['references'])
@@ -109,7 +99,7 @@ class Database:
                     (tag, self.extended_datasets['name'], tag)
                 )
 
-        set_clause = ', '.join([f"{col} = ?" for col in changes.keys()])
+        set_clause = ', '.join([f"db_{col} = ?" for col in changes.keys()])
         values = list(changes.values())
         values.append(self.extended_datasets['name'])
 
@@ -156,11 +146,11 @@ class Database:
         datasets_with_tags = []
         for row in rows:
             dataset = dict(row)
-            tags = row['tags']
+            tags = row['db_tags']
             if tags:
-                dataset['tags'] = tags.split(', ')
+                dataset['db_tags'] = tags.split(', ')
             else:
-                dataset['tags'] = []
+                dataset['db_tags'] = []
             datasets_with_tags.append(dataset)
 
         return datasets_with_tags

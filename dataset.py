@@ -30,6 +30,11 @@ class Dataset:
             'location': kwargs.get('location'),
         }
         self.kwargs_to_yaml()
+        self.combine_array()
+
+    def combine_array(self):
+        if type(self.dataset['references']) is list:
+            self.dataset['references'] = '\n'.join(self.dataset['references'])
 
     def kwargs_to_yaml(self):
         if self.dataset['custom'] is not None:
