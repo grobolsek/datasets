@@ -1,57 +1,69 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
-import Chip from '@mui/material/Chip';
+import {Button} from "@mui/material";
 
-const MultiAutoComplete = ({ tableName, placeholder, selectedItems }) => {
-    const [options, setOptions] = useState([]);
+const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
+    const [selectedValues, setSelectedValues] = useState(values);
+    const [inputValue, setInputValue] = useState('');
 
-    useEffect(() => {
-        fetchOptions();
-    }, []);
+    // Update local state when values prop changes (e.g., if controlled externally)
+    React.useEffect(() => {
+        setSelectedValues(values);
+    }, [values]);
 
-    const fetchOptions = async () => {
-        try {
-            const response = await fetch(`/table/${tableName}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch options');
-            }
-            const data = await response.json();
-            setOptions(data);
-            console.log(data);
-        } catch (error) {
-            console.error('Error fetching options:', error);
+    const handleInputChange = (event, newInputValue) => {
+        setInputValue(newInputValue);
+    };
+
+    const handleChange = (event, newValue) => {
+        setSelectedValues(newValue);
+        // Pass the updated values back to the parent component
+        if (onChange) {
+            onChange(newValue);
         }
     };
 
-    const handleAddOption = (event, value) => {
-        // Create new option and add to state
-        const newOption = { label: value };
-        setOptions([...options, newOption]);
+    const handleAddOption = () => {
+        if (inputValue.trim() !== '' && !selectedValues.includes(inputValue)) {
+            const newOption = { label: inputValue, value: inputValue.toLowerCase() };
+            setSelectedValues([...selectedValues, newOption]);
+            setInputValue('');
+            // Notify parent component of the change
+            if (onChange) {
+                onChange([...selectedValues, newOption]);
+            }
+        }
     };
 
     return (
         <Autocomplete
             multiple
-            id="multi-autocomplete"
+            id="multi-choice-autocomplete"
             options={options}
-            getOptionLabel={(option) => option.label}
-            defaultValue={selectedItems} // Initial selected items
-            renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                    <Chip key={index} label={option.label} {...getTagProps({ index })} />
-                ))
-            }
+            onChange={handleChange}
+            value={selectedValues}
+            inputValue={inputValue}
+            onInputChange={handleInputChange}
+            getOptionLabel={(option) => option.label || option}
+            sx={{mt:3}}
             renderInput={(params) => (
                 <TextField
                     {...params}
                     variant="outlined"
                     label={placeholder}
-                    placeholder={placeholder}
+                    placeholder="Select or type new options"
+                    InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                            <React.Fragment>
+                                {params.InputProps.endAdornment}
+                                <Button onClick={handleAddOption}>Add</Button>
+                            </React.Fragment>
+                        ),
+                    }}
                 />
             )}
-            freeSolo
-            onChange={handleAddOption} // To handle adding custom options
         />
     );
 };

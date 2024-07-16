@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button, TextField, Box, Typography } from '@mui/material';
-import CustomAutocomplete from './MultiAutoComplete';
+import React, {useEffect, useState} from 'react';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography} from '@mui/material';
+import MultiAutoComplete from './MultiAutoComplete';
 
 const EditDialog = ({ open, onClose, dataset, onSave }) => {
     const [editedData, setEditedData] = useState({
@@ -13,12 +13,12 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
         tags: [],
         languages: [],
         domains: [],
+        name: '',
     });
 
     const [initialData, setInitialData] = useState({});
 
     useEffect(() => {
-        console.log('Dataset:', dataset); // Log dataset to inspect its contents
         if (dataset) {
             const initial = {
                 title: dataset.db_title || '',
@@ -30,12 +30,47 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                 tags: dataset.db_tags || [],
                 languages: dataset.db_languages || [],
                 domains: dataset.db_domains || [],
-                name: dataset.db_name || [],
+                name: dataset.db_name || '',
             };
             setEditedData(initial);
             setInitialData(initial);
         }
+
     }, [dataset]);
+
+    const [tableData, setTableData] = useState({});
+
+    const fetchTableData = async (tableName) => {
+        try {
+            const response = await fetch(`/table/${tableName}`);
+            if (!response.ok) {
+                console.error(`Failed to fetch data for table ${tableName}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error(`Error fetching data for table ${tableName}:`, error);
+            return null;
+        }
+    };
+
+    useEffect(() => {
+        const tableNames = ['tags/tag', 'languages/language', 'domains/domain']; // Replace with your table names
+        const fetchData = async () => {
+            const dataPromises = tableNames.map(tableName => fetchTableData(tableName));
+            try {
+                const results = await Promise.all(dataPromises);
+                const newData = {};
+                tableNames.forEach((tableName, index) => {
+                    newData[tableName] = results[index];
+                });
+                setTableData(newData);
+            } catch (error) {
+                console.error('Error fetching table data:', error);
+            }
+        };
+
+        fetchData();
+    }, []);
 
     const handleChange = (name, newValue) => {
         setEditedData(prevData => ({
@@ -95,6 +130,10 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
         onClose();
     };
 
+    const getOptionLabel = (option) => {
+        return option.label; // Adjust based on your actual options structure
+    };
+
     return (
         <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
             <DialogTitle>Edit Dataset {editedData.name}</DialogTitle>
@@ -133,7 +172,17 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                     margin="normal"
                     multiline
                 />
-                <Box>
+                <Box sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-start',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    border: "1px lightgray solid",
+                    borderRadius: 1,
+                    px: 2,
+                    py: 1,
+                    my: 2
+                }}>
                     {editedData.references.map((reference, index) => (
                         <TextField
                             key={index}
@@ -143,30 +192,32 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                             value={reference}
                             onChange={(event) => handleReferenceChange(index, event)}
                             margin="normal"
+                            multiline={true}
                         />
                     ))}
-                    <Button onClick={handleAddReference}>Add Reference</Button>
+                    <Button sx={{ py: "0px" }} onClick={handleAddReference}>Add Reference</Button>
                 </Box>
-                <Box mt={2} display="flex" alignItems="center">
+                <Box sx={{
+                    my: 2,
+                    borderRadius: 1,
+                    display:"flex",
+                    alignItems:"center",
+                    border: "1px lightgray solid",
+                    px: 2,
+                    py: 1,
+                    gap: 1,
+                    mt: 3
+                }}>
                     <Typography mr={2}>VERSION: {editedData.version}</Typography>
-                    <Button onClick={handleVersionIncrease}>+1</Button>
-                    <Button onClick={handleVersionDecrease}>-1</Button>
+                    <Button variant="outlined" sx={{ p: "0px" }} onClick={handleVersionIncrease}>+1</Button>
+                    <Button variant="outlined" sx={{ p: "0px" }} onClick={handleVersionDecrease}>-1</Button>
                 </Box>
-                {/* Example of CustomAutocomplete usage */}
-                <CustomAutocomplete
+                <MultiAutoComplete
+                    options={tableData['tags/tag']}
                     placeholder="Tags"
-                    tableName="tags/tag"
-                    selectedItems={editedData.tags}
-                />
-                <CustomAutocomplete
-                    placeholder="Languages"
-                    tableName="languages/language"
-                    selectedItems={editedData.languages}
-                />
-                <CustomAutocomplete
-                    placeholder="Domains"
-                    tableName="domains/domain"
-                    selectedItems={editedData.domains}
+                    values={editedData.tags} // Pass the tags array from editedData
+                    onChange={(newTags) => handleChange('tags', newTags)} // Pass the handleChange function to update tags
+                    getOptionLabel={getOptionLabel} // Ensure getOptionLabel is passed to MultiAutoComplete
                 />
             </DialogContent>
             <DialogActions>
