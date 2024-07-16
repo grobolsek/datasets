@@ -39,9 +39,8 @@ class Database:
         if value is None:
             return
         try:
-            self._execute_with_retry(f"SELECT 1 FROM {table} WHERE {column} = ?", (value,))
+            self._execute_with_retry(f"SELECT * FROM {table} WHERE {column} = ?", (value,))
             existing_record = self.cursor.fetchone()
-
             if existing_record:
                 self._execute_with_retry(f"UPDATE {table} SET {column} = ? WHERE {column} = ?", (value, value))
             else:
@@ -87,23 +86,35 @@ class Database:
             return e, 400
 
     def edit(self, changes: dict):
+        print(f'{changes=}')
         if 'db_language' in changes:
             self.exists_update('languages', 'language', changes['db_language'])
         if 'db_domain' in changes:
             self.exists_update('domains', 'domain', changes['db_domain'])
-        if 'db_tags' in changes:
-            for tag in changes['db_tags']:
-                self.exists_update('tags', 'tag', tag)
-                self._execute_with_retry(
-                    'UPDATE datasets_tags SET tag_id = ? WHERE db_name = ? AND tag_id = ?',
-                    (tag, self.extended_datasets['name'], tag)
-                )
+        if 'tags' in changes:
+            self._execute_with_retry('DELETE FROM datasets_tags WHERE db_name = ?',
+                                     (self.extended_datasets['name'],))
+            self.connection.commit()
+            for tag in changes['tags']:
+                if type(tag) is dict:
+                    self.exists_update('tags', 'tag', tag['value'])
+                    self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
+                                             (self.extended_datasets['name'], tag['value']))
+                else:
+                    self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
+                                             (self.extended_datasets['name'], tag))
 
-        set_clause = ', '.join([f"db_{col} = ?" for col in changes.keys()])
-        values = list(changes.values())
+        removed_tags = deepcopy(changes)
+        del removed_tags['tags']
+
+        set_clause = ', '.join([f"db_{key} = ?" for key in removed_tags.keys()])
+        values = list(removed_tags.values())
+        if len(values) == 0:
+            return
         values.append(self.extended_datasets['name'])
 
         sql_query = f"UPDATE datasets SET {set_clause} WHERE db_name = ?"
+        print(sql_query, values)
         self._execute_with_retry(sql_query, tuple(values))
 
         self.connection.commit()

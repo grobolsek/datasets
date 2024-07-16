@@ -66,9 +66,11 @@ class Dataset:
         database.add()
 
     def edit(self, **kwargs):
+        print(kwargs)
         old = Database(dataset={'name': self.dataset['name']})
         if kwargs.get('version') is not None:
-            kwargs['version'] = self.dataset['version']
+            kwargs['version'] = self.change_version(kwargs['version'])
+            print(kwargs)
         old.edit(kwargs)
 
     def get_value(self):
@@ -81,10 +83,9 @@ class Dataset:
     def check_exists(self):
         return Database({'name': self.dataset['name']}).check_exists()
 
-    def change_version(self):
-        if self.dataset['version'] is None:
-            return
-        primary, secondary = self.dataset['version'].split('.')
+    @staticmethod
+    def change_version(version: str):
+        primary, secondary = version.split('.')
         secondary = int(secondary) + 1
         return f'{primary}.{secondary}'
 

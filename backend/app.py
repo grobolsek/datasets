@@ -38,11 +38,10 @@ def remove_dataset(dataset_name):
 @app.route('/datasets/edit/<dataset_name>', methods=['PUT'])
 def edit_dataset(dataset_name):
     changes = request.get_json()
-    print(changes)
     try:
         d = Dataset(name=dataset_name)
         d.edit(**changes)
-        return {"message": f"Dataset '{dataset_name}' has been edited successfully."}, 200
+        return 200
     except Exception as e:
         return {"message": str(e)}, 400
 
