@@ -86,22 +86,18 @@ class Database:
             return e, 400
 
     def edit(self, changes: dict):
-        if 'db_language' in changes:
-            self.exists_update('languages', 'language', changes['db_language'])
-        if 'db_domain' in changes:
-            self.exists_update('domains', 'domain', changes['db_domain'])
+        if 'language' in changes:
+            self.exists_update('languages', 'language', changes['language'])
+        if 'domain' in changes:
+            self.exists_update('domains', 'domain', changes['domain'])
         if 'tags' in changes:
             self._execute_with_retry('DELETE FROM datasets_tags WHERE db_name = ?',
                                      (self.extended_datasets['name'],))
             self.connection.commit()
             for tag in changes['tags']:
-                if type(tag) is dict:
-                    self.exists_update('tags', 'tag', tag['value'])
-                    self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
-                                             (self.extended_datasets['name'], tag['value']))
-                else:
-                    self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
-                                             (self.extended_datasets['name'], tag))
+                self.exists_update('tags', 'tag', tag)
+                self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
+                                         (self.extended_datasets['name'], tag))
 
         removed_tags = deepcopy(changes)
         if 'tags' in changes:

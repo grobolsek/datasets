@@ -1,6 +1,7 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography} from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material';
 import MultiAutoComplete from './MultiAutoComplete';
+import SingleAutoComplete from "./SingleAutoComplete";
 
 const EditDialog = ({ open, onClose, dataset, onSave }) => {
     const [editedData, setEditedData] = useState({
@@ -11,8 +12,8 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
         references: [],
         version: '1.0',
         tags: [],
-        languages: [],
-        domains: [],
+        language: '', // Changed to 'language' instead of 'languages'
+        domain: '', // Changed to 'domain' instead of 'domains'
         name: '',
     });
 
@@ -28,14 +29,13 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                 references: dataset.db_references ? dataset.db_references.split('\n') : [],
                 version: dataset.db_version || '1.0',
                 tags: dataset.db_tags || [],
-                languages: dataset.db_languages || [],
-                domains: dataset.db_domains || [],
+                language: dataset.db_language || '', // Changed to 'language' instead of 'languages'
+                domain: dataset.db_domain || '', // Changed to 'domain' instead of 'domains'
                 name: dataset.db_name || '',
             };
             setEditedData(initial);
             setInitialData(initial);
         }
-
     }, [dataset]);
 
     const [tableData, setTableData] = useState({});
@@ -73,6 +73,9 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
     }, []);
 
     const handleChange = (name, newValue) => {
+        if (typeof newValue === 'object' && newValue.value) {
+            newValue = newValue.value; // Use only the 'value' property
+        }
         setEditedData(prevData => ({
             ...prevData,
             [name]: newValue
@@ -215,9 +218,23 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                 <MultiAutoComplete
                     options={tableData['tags/tag']}
                     placeholder="Tags"
-                    values={editedData.tags} // Pass the tags array from editedData
-                    onChange={(newTags) => handleChange('tags', newTags)} // Pass the handleChange function to update tags
-                    getOptionLabel={getOptionLabel} // Ensure getOptionLabel is passed to MultiAutoComplete
+                    values={editedData.tags}
+                    onChange={(newTags) => handleChange('tags', newTags)}
+                    getOptionLabel={getOptionLabel}
+                />
+                <SingleAutoComplete
+                    options={tableData['languages/language']}
+                    placeholder="Language"
+                    value={editedData.language} // Changed to 'language' instead of 'languages'
+                    onChange={(newLanguage) => handleChange('language', newLanguage)} // Changed to 'language' instead of 'languages'
+                    getOptionLabel={getOptionLabel}
+                />
+                <SingleAutoComplete
+                    options={tableData['domains/domain']}
+                    placeholder="Domain"
+                    value={editedData.domain} // Changed to 'domain' instead of 'domains'
+                    onChange={(newDomain) => handleChange('domain', newDomain)} // Changed to 'domain' instead of 'domains'
+                    getOptionLabel={getOptionLabel}
                 />
             </DialogContent>
             <DialogActions>
