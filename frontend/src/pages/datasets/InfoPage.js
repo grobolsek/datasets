@@ -69,6 +69,7 @@ const InfoPage = () => {
                 );
                 setDatasets(updatedDatasets);
                 console.log('Dataset updated successfully:', updatedDataset);
+                handleCloseEditDialog(); // Close the edit dialog
             })
             .catch((error) => {
                 console.error('Error updating dataset:', error);

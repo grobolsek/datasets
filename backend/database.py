@@ -60,7 +60,7 @@ class Database:
             self.exists_update('domains', 'domain', self.extended_datasets['domain'])
             self.exists_update('languages', 'language', self.extended_datasets['language'])
 
-            if self.extended_datasets['references'] is not None:
+            if self.extended_datasets['references'] is not None and type(self.extended_datasets['references'] is list):
                 self.extended_datasets['references'] = '\n'.join(self.extended_datasets['references'])
 
             columns = ', '.join(self._converted_names(self.extended_datasets))
@@ -86,7 +86,6 @@ class Database:
             return e, 400
 
     def edit(self, changes: dict):
-        print(f'{changes=}')
         if 'db_language' in changes:
             self.exists_update('languages', 'language', changes['db_language'])
         if 'db_domain' in changes:
@@ -105,7 +104,11 @@ class Database:
                                              (self.extended_datasets['name'], tag))
 
         removed_tags = deepcopy(changes)
-        del removed_tags['tags']
+        if 'tags' in changes:
+            del removed_tags['tags']
+
+        if 'references' in removed_tags and type(removed_tags['references'] is list):
+            removed_tags['references'] = '\n'.join(removed_tags['references'])
 
         set_clause = ', '.join([f"db_{key} = ?" for key in removed_tags.keys()])
         values = list(removed_tags.values())
@@ -114,7 +117,6 @@ class Database:
         values.append(self.extended_datasets['name'])
 
         sql_query = f"UPDATE datasets SET {set_clause} WHERE db_name = ?"
-        print(sql_query, values)
         self._execute_with_retry(sql_query, tuple(values))
 
         self.connection.commit()
@@ -126,7 +128,7 @@ class Database:
                 FROM datasets d
                 LEFT JOIN datasets_tags dt ON d.db_name = dt.db_name
                 LEFT JOIN tags t ON dt.tag_id = t.tag
-                WHERE d.db_name = ?
+                WHERE LOWER(d.db_name) = LOWER(?)
                 GROUP BY d.db_name
                 """
         self._execute_with_retry(query, (self.extended_datasets['name'],))

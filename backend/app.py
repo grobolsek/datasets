@@ -22,7 +22,10 @@ def get_table(column_name, table_name):
 
 @app.route('/datasets/get/<string:dataset_name>')
 def get_datasets_single(dataset_name):
-    return Dataset(name=dataset_name).get_value(), 200
+    d = Dataset(name=dataset_name)
+    data = d.get_value()
+    data['db_tags'] = data.pop('tags')
+    return data, 200
 
 
 @app.route('/datasets/remove/<dataset_name>', methods=['DELETE'])
@@ -38,10 +41,13 @@ def remove_dataset(dataset_name):
 @app.route('/datasets/edit/<dataset_name>', methods=['PUT'])
 def edit_dataset(dataset_name):
     changes = request.get_json()
+    print(changes)
     try:
         d = Dataset(name=dataset_name)
         d.edit(**changes)
-        return 200
+        data = d.get_value()
+        data['db_tags'] = data.pop('tags')
+        return data, 200
     except Exception as e:
         return {"message": str(e)}, 400
 

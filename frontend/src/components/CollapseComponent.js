@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, List, ListItem, ListItemText, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CopyButton from './CopyButton';
 import EditDialog from './EditDialog';
 import CustomAutocomplete from './MultiAutoComplete';
 
-const CollapseComponent = ({ dataset, onRemove }) => {
+const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
+    const [dataset, setDataset] = useState(initialDataset); // Use state to manage dataset
+
     const [openRemoveDialog, setOpenRemoveDialog] = useState(false);
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [hovered, setHovered] = useState(false);
-    const [tags, setTags] = useState(dataset.tags ? [...dataset.tags] : []); // Initialize with dataset tags
+
+    useEffect(() => {
+        // Update local dataset when initialDataset changes
+        setDataset(initialDataset);
+    }, [initialDataset]);
 
     const handleRemoveClick = (e) => {
         e.stopPropagation();
@@ -30,7 +36,7 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                 }
                 return response.json();
             })
-            .then((data) => {
+            .then(() => {
                 onRemove(dataset.db_name); // Call parent's remove function
                 handleCloseRemoveDialog();
             })
@@ -59,8 +65,8 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                 return response.json();
             })
             .then((data) => {
-                // Assuming backend returns updated dataset with tags
-                setTags(data.tags); // Update tags locally
+                console.log(data)
+                setDataset(data); // Update dataset with new data
                 handleCloseEditDialog(); // Close edit dialog
             })
             .catch((error) => {
@@ -97,9 +103,9 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                                 <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
                             </ListItem>
                         ))}
-                        {tags.length > 0 && (
+                        {dataset.db_tags.length > 0 && (
                             <ListItem>
-                                <ListItemText primary="Tags" secondary={tags.join(', ')} />
+                                <ListItemText primary="Tags" secondary={dataset.db_tags.join(', ')} />
                             </ListItem>
                         )}
                     </List>
@@ -190,9 +196,8 @@ const CollapseComponent = ({ dataset, onRemove }) => {
                 onSave={handleEditSave}
             >
                 <CustomAutocomplete
-                    options={[]} // You may need to fetch options dynamically
-                    value={tags}
-                    onChange={setTags}
+                    options={[]}
+                    value={dataset.tags}
                     placeholder="Add Tags"
                 />
             </EditDialog>

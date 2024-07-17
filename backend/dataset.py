@@ -29,16 +29,6 @@ class Dataset:
             'url': kwargs.get('url'),
             'location': kwargs.get('location'),
         }
-        self.kwargs_to_yaml()
-        self.combine_array()
-
-    def combine_array(self):
-        if type(self.dataset['references']) is list:
-            self.dataset['references'] = '\n'.join(self.dataset['references'])
-
-    def kwargs_to_yaml(self):
-        if self.dataset['custom'] is not None:
-            self.dataset['custom'] = yaml.dump(self.dataset['custom'], default_flow_style=False)
 
     def add(self):
         if self.check_exists():
@@ -66,15 +56,13 @@ class Dataset:
         database.add()
 
     def edit(self, **kwargs):
-        print(kwargs)
         old = Database(dataset={'name': self.dataset['name']})
         if kwargs.get('version') is not None:
             kwargs['version'] = self.change_version(kwargs['version'])
-            print(kwargs)
         old.edit(kwargs)
 
     def get_value(self):
-        return self.dataset
+        return Database(dataset={'name': self.dataset['name']}).get_value()
 
     @staticmethod
     def get_all():
