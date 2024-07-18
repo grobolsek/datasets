@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
-import CollapseComponent from '../../components/CollapseComponent';
-import EditDialog from '../../components/EditDialog'; // Import EditDialog component
+import CollapseComponent from '../components/CollapseComponent';
+import EditDialog from '../components/EditDialog'; // Import EditDialog component
 import { useNavigate } from "react-router-dom";
 
 const InfoPage = () => {
@@ -23,7 +23,6 @@ const InfoPage = () => {
             .then((data) => {
                 setDatasets(data);
                 setLoading(false);
-                console.log(data);
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);
@@ -68,7 +67,6 @@ const InfoPage = () => {
                     dataset.db_name === updatedDataset.db_name ? updatedDataset : dataset
                 );
                 setDatasets(updatedDatasets);
-                console.log('Dataset updated successfully:', updatedDataset);
                 handleCloseEditDialog(); // Close the edit dialog
             })
             .catch((error) => {
@@ -85,7 +83,7 @@ const InfoPage = () => {
     }
 
     const redirectToAddPage = () => {
-        let path = '/edit';
+        let path = '/add';
         navigate(path);
     };
 

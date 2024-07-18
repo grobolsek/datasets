@@ -2,9 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider} from 'react-router-dom'
 
-import EditPage from "./pages/datasets/AddPage";
-import InfoPage from "./pages/datasets/InfoPage";
+import InfoPage from "./pages/InfoPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import AddPage from "./pages/AddPage";
 
 
 const router = createBrowserRouter([
@@ -14,9 +14,10 @@ const router = createBrowserRouter([
         errorElement: <NotFoundPage />,
     },
     {
-        path: "/edit",
-        element: <EditPage />,
-    },
+        path: "/add",
+        element: <AddPage />,
+        errorElement: <NotFoundPage />,
+    }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(

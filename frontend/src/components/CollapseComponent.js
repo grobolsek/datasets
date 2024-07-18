@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Accordion, AccordionSummary, AccordionDetails, Typography, Box, List, ListItem, ListItemText, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import {
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
+    Typography, // Ensure Typography is imported from MUI
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogContentText,
+    DialogTitle,
+} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CopyButton from './CopyButton';
 import EditDialog from './EditDialog';
 import CustomAutocomplete from './MultiAutoComplete';
 
 const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
-    const [dataset, setDataset] = useState(initialDataset); // Use state to manage dataset
-
+    const [dataset, setDataset] = useState(initialDataset);
     const [openRemoveDialog, setOpenRemoveDialog] = useState(false);
     const [openEditDialog, setOpenEditDialog] = useState(false);
     const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
-        // Update local dataset when initialDataset changes
         setDataset(initialDataset);
     }, [initialDataset]);
 
@@ -37,7 +47,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                 return response.json();
             })
             .then(() => {
-                onRemove(dataset.db_name); // Call parent's remove function
+                onRemove(dataset.db_name);
                 handleCloseRemoveDialog();
             })
             .catch((error) => {
@@ -65,9 +75,8 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                 return response.json();
             })
             .then((data) => {
-                console.log(data)
-                setDataset(data); // Update dataset with new data
-                handleCloseEditDialog(); // Close edit dialog
+                setDataset(data);
+                handleCloseEditDialog();
             })
             .catch((error) => {
                 console.error('Error editing dataset:', error);
@@ -78,38 +87,31 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
         setOpenEditDialog(false);
     };
 
-    // Function to render key-value pairs of dataset properties in two columns
     const renderDatasetProperties = () => {
         const properties = Object.keys(dataset).filter(key => key.startsWith('db_') && key !== 'db_name');
-        const midPoint = Math.ceil(properties.length / 2);
-        const firstColumn = properties.slice(0, midPoint);
-        const secondColumn = properties.slice(midPoint);
-
         return (
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <Box sx={{ flex: 1 }}>
-                    <List sx={{ bgcolor: 'lightgray', minWidth: 200 }}>
-                        {firstColumn.map(key => (
-                            <ListItem key={key}>
-                                <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
-                            </ListItem>
-                        ))}
-                    </List>
-                </Box>
-                <Box sx={{ flex: 1 }}>
-                    <List sx={{ bgcolor: 'lightgray', minWidth: 200 }}>
-                        {secondColumn.map(key => (
-                            <ListItem key={key}>
-                                <ListItemText primary={key.substring(3)} secondary={dataset[key]} />
-                            </ListItem>
-                        ))}
-                        {dataset.db_tags.length > 0 && (
-                            <ListItem>
-                                <ListItemText primary="Tags" secondary={dataset.db_tags.join(', ')} />
-                            </ListItem>
-                        )}
-                    </List>
-                </Box>
+            <Box sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                maxHeight: '500px',
+                overflowY: 'auto',
+                padding: '8px'
+            }}>
+                {properties.map((key) => (
+                    <Box key={key} sx={{
+                        flex: '1 1 calc(50% - 8px)',
+                        marginBottom: '16px',
+                        boxSizing: 'border-box',
+                        padding: '8px',
+                        borderBottom: '1px solid #ddd'
+                    }}>
+                        <Typography variant='h6'>{key.substring(3)}</Typography>
+                        <Typography>{key === 'db_tags'
+                            ? dataset[key].join(', ')
+                            : dataset[key]}
+                        </Typography>
+                    </Box>
+                ))}
             </Box>
         );
     };
@@ -123,7 +125,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                 <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     aria-controls="panel-content"
-                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}
+                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                 >
                     <Typography variant="h6" sx={{ flexGrow: 1 }}>{dataset.db_name}</Typography>
                     <Box
@@ -141,7 +143,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                                 ':hover': {
                                     bgcolor: '#b26500',
                                 },
-                                marginRight: '8px',
+                                marginRight: 1,
                             }}
                             variant="contained"
                             onClick={handleEditClick}
@@ -154,7 +156,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                                 ':hover': {
                                     bgcolor: '#950000',
                                 },
-                                marginRight: '8px',
+                                marginRight: 1,
                             }}
                             variant="contained"
                             onClick={handleRemoveClick}
@@ -167,7 +169,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                         />
                     </Box>
                 </AccordionSummary>
-                <AccordionDetails>
+                <AccordionDetails sx={{ p: 3, backgroundColor: '#e0e0e0', borderRadius: '16px 16px 0 0' }}>
                     {renderDatasetProperties()}
                 </AccordionDetails>
             </Accordion>

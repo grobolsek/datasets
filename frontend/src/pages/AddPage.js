@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, Typography } from '@mui/material';
-import MultiAutoComplete from './MultiAutoComplete';
-import SingleAutoComplete from "./SingleAutoComplete";
-import { FileUpload } from "./FileUpload";
+import { Box, Button, Container, TextField, Typography } from '@mui/material';
+import { Link, useNavigate } from 'react-router-dom';
+import MultiAutoComplete from "../components/MultiAutoComplete";
+import SingleAutoComplete from "../components/SingleAutoComplete";
+import { FileUpload } from "../components/FileUpload";
 
-const EditDialog = ({ open, onClose, dataset, onSave }) => {
+const AddPage = () => {
     const [editedData, setEditedData] = useState({
         title: '',
         collection: '',
@@ -13,49 +14,33 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
         references: [],
         version: '1.0',
         tags: [],
-        language: '', // Changed to 'language' instead of 'languages'
-        domain: '', // Changed to 'domain' instead of 'domains'
+        language: '',
+        domain: '',
         name: '',
     });
 
-    const [initialData, setInitialData] = useState({});
+    const [tableData, setTableData] = useState({
+        'tags/tag': [],
+        'languages/language': [],
+        'domains/domain': [],
+    });
 
     useEffect(() => {
-        if (dataset) {
-            const initial = {
-                title: dataset.db_title || '',
-                collection: dataset.db_collection || '',
-                description: dataset.db_description || '',
-                custom: dataset.db_custom || '',
-                references: dataset.db_references ? dataset.db_references.split('\n') : [],
-                version: dataset.db_version || '1.0',
-                tags: dataset.db_tags || [],
-                language: dataset.db_language || '', // Changed to 'language' instead of 'languages'
-                domain: dataset.db_domain || '', // Changed to 'domain' instead of 'domains'
-                name: dataset.db_name || '',
-            };
-            setEditedData(initial);
-            setInitialData(initial);
-        }
-    }, [dataset]);
+        const tableNames = ['tags/tag', 'languages/language', 'domains/domain'];
 
-    const [tableData, setTableData] = useState({});
-
-    const fetchTableData = async (tableName) => {
-        try {
-            const response = await fetch(`/table/${tableName}`);
-            if (!response.ok) {
-                console.error(`Failed to fetch data for table ${tableName}`);
+        const fetchTableData = async (tableName) => {
+            try {
+                const response = await fetch(`/api/${tableName}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch ${tableName}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error(`Error fetching ${tableName} data:`, error);
+                return [];
             }
-            return await response.json();
-        } catch (error) {
-            console.error(`Error fetching data for table ${tableName}:`, error);
-            return null;
-        }
-    };
+        };
 
-    useEffect(() => {
-        const tableNames = ['tags/tag', 'languages/language', 'domains/domain']; // Replace with your table names
         const fetchData = async () => {
             const dataPromises = tableNames.map(tableName => fetchTableData(tableName));
             try {
@@ -120,28 +105,53 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
     };
 
     const handleSave = () => {
-        const updatedData = {};
-        Object.keys(editedData).forEach(key => {
-            if (Array.isArray(editedData[key])) {
-                if (editedData[key].toString() !== initialData[key].toString()) {
-                    updatedData[key] = editedData[key];
+        fetch('/datasets/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(editedData),
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
-            } else if (editedData[key] !== initialData[key]) {
-                updatedData[key] = editedData[key];
-            }
-        });
-        onSave(updatedData);
-        onClose();
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dataset added successfully:', data);
+                // Optionally, handle success and navigate to another page
+            })
+            .catch(error => {
+                console.error('Error adding dataset:', error);
+            });
     };
 
     const getOptionLabel = (option) => {
-        return option.value;
+        return option.value; // Adjust based on your options structure
     };
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
-            <DialogTitle>Edit Dataset {editedData.name}</DialogTitle>
-            <DialogContent>
+        <Container>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography component="h1" variant="h4">
+                    Add Dataset
+                </Typography>
+                <Button
+                    component={Link}
+                    to="/"
+                    sx={{
+                        bgcolor: '#f50057',
+                        ':hover': {
+                            bgcolor: '#c51162',
+                        },
+                    }}
+                    variant="contained"
+                >
+                    Cancel
+                </Button>
+            </Box>
+            <Box>
                 <TextField
                     fullWidth
                     label="Title"
@@ -204,8 +214,8 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                 <Box sx={{
                     my: 2,
                     borderRadius: 1,
-                    display:"flex",
-                    alignItems:"center",
+                    display: "flex",
+                    alignItems: "center",
                     border: "1px lightgray solid",
                     px: 2,
                     py: 1,
@@ -247,13 +257,16 @@ const EditDialog = ({ open, onClose, dataset, onSave }) => {
                     })}
                     hide={false}
                 />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onClose} color="primary">Cancel</Button>
-                <Button onClick={handleSave} color="secondary">Save</Button>
-            </DialogActions>
-        </Dialog>
+                <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    color="primary"
+                >
+                    Save
+                </Button>
+            </Box>
+        </Container>
     );
 };
 
-export default EditDialog;
+export default AddPage;
