@@ -31,8 +31,8 @@ const InfoPage = () => {
             });
     }, []);
 
-    const handleRemoveDataset = (datasetName) => {
-        setDatasets((prevDatasets) => prevDatasets.filter((dataset) => dataset.db_name !== datasetName));
+    const handleRemoveDataset = (datasetLocation) => {
+        setDatasets((prevDatasets) => prevDatasets.filter((dataset) => dataset.db_location !== datasetLocation));
     };
 
     const handleEditDataset = (dataset) => {
@@ -47,8 +47,8 @@ const InfoPage = () => {
 
     const handleSaveDataset = (changedFields) => {
         // Prepare data to send to backend
-        const { db_name, ...updates } = changedFields;
-        fetch(`/edit/${db_name}`, {
+        const { db_location, ...updates } = changedFields;
+        fetch(`/edit/${db_location}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ const InfoPage = () => {
             .then((updatedDataset) => {
                 // Update dataset in local state with changes from backend if necessary
                 const updatedDatasets = datasets.map((dataset) =>
-                    dataset.db_name === updatedDataset.db_name ? updatedDataset : dataset
+                    dataset.db_location === updatedDataset.db_location ? updatedDataset : dataset
                 );
                 setDatasets(updatedDatasets);
                 handleCloseEditDialog(); // Close the edit dialog

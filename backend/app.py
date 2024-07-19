@@ -20,30 +20,38 @@ def get_table(column_name, table_name):
     return Dataset.get_table(column_name, table_name), 200
 
 
-@app.route('/datasets/get/<string:dataset_name>')
-def get_datasets_single(dataset_name):
-    d = Dataset(name=dataset_name)
+@app.route('/datasets/get/<string:dataset_location>')
+def get_datasets_single(dataset_location):
+    d = Dataset(location=dataset_location)
     data = d.get_value()
     data['db_tags'] = data.pop('tags')
     return data, 200
 
 
-@app.route('/datasets/remove/<dataset_name>', methods=['DELETE'])
-def remove_dataset(dataset_name):
-    connection = sqlite3.connect('datasets.sqlite')
+@app.route('/datasets/remove/<dataset_location>', methods=['DELETE'])
+def remove_dataset(dataset_location):
+    connection = sqlite3.connect('../data/datasets.sqlite')
     cursor = connection.cursor()
-    cursor.execute('DELETE FROM datasets WHERE db_name = ?', (dataset_name,))
+    cursor.execute('DELETE FROM datasets WHERE db_location = ?', (dataset_location,))
     connection.commit()
     connection.close()
-    return {"message": f"Dataset '{dataset_name}' has been deleted successfully."}, 200
+    return {"message": f"Dataset '{dataset_location}' has been deleted successfully."}, 200
 
 
-@app.route('/datasets/edit/<dataset_name>', methods=['PUT'])
-def edit_dataset(dataset_name):
+@app.route('/datasets/edit/<dataset_location>', methods=['PUT'])
+def edit_dataset(dataset_location):
     changes = request.get_json()
     print(changes)
+    for key, value in changes.items():
+        if isinstance(value, list):
+            for i, v in enumerate(value):
+                if isinstance(v, dict):
+                    changes[key][i] = v['value']
+        elif isinstance(value, dict):
+            changes[key] = value['value']
+    print(changes)
     try:
-        d = Dataset(name=dataset_name)
+        d = Dataset(location=dataset_location)
         d.edit(**changes)
         data = d.get_value()
         data['db_tags'] = data.pop('tags')

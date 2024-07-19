@@ -2,7 +2,7 @@ import sqlite3
 
 
 def create_database() -> None:
-    connection = sqlite3.connect('datasets.sqlite')
+    connection = sqlite3.connect('../data/datasets.sqlite')
     cursor = connection.cursor()
     cursor.execute("PRAGMA foreign_keys = ON")
 
@@ -38,7 +38,7 @@ def create_database() -> None:
             db_target TEXT,
             db_location TEXT,
             db_size INTEGER,
-            PRIMARY KEY (db_name),
+            PRIMARY KEY (db_location),
             FOREIGN KEY(db_language) REFERENCES languages(language),
             FOREIGN KEY (db_domain) REFERENCES domains(domain)
         )
@@ -52,10 +52,10 @@ def create_database() -> None:
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS datasets_tags (
-            db_name TEXT,
+            db_location TEXT,
             tag_id TEXT,
-            PRIMARY KEY (db_name, tag_id),
-            FOREIGN KEY (db_name) REFERENCES datasets(db_name) ON DELETE CASCADE,
+            PRIMARY KEY (db_location, tag_id),
+            FOREIGN KEY (db_location) REFERENCES datasets(db_location) ON DELETE CASCADE,
             FOREIGN KEY (tag_id) REFERENCES tags(tag) ON DELETE CASCADE
         )
     """)
@@ -65,7 +65,7 @@ def create_database() -> None:
 
 
 def drop_table() -> None:
-    connection = sqlite3.connect('datasets.sqlite')
+    connection = sqlite3.connect('../data/datasets.sqlite')
     cursor = connection.cursor()
     cursor.execute("DROP TABLE IF EXISTS datasets")
     cursor.execute("DROP TABLE IF EXISTS tags")

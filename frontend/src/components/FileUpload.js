@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 
-export const FileUpload = ({ accept, t, errorText, onFileUpload, hide = false }) => {
+export const FileUpload = ({ accept, errorText, onFileUpload, hide = false }) => {
     const [fileName, setFileName] = useState(null);
 
     const onFileChange = useCallback((event) => {
@@ -51,7 +51,7 @@ export const FileUpload = ({ accept, t, errorText, onFileUpload, hide = false })
                 onDrop={onDrop}
                 onDragOver={onDragOver}
             >
-                {fileName || t("uploadFile")}
+                {fileName || "Upload File"}
             </label>
             <small className="text-danger" style={{ display: hide ? 'none' : 'block' }}>
                 {errorText}

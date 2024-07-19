@@ -26,7 +26,7 @@ const SingleAutoComplete = ({ options, placeholder, value, onChange }) => {
 
     const handleAddOption = () => {
         if (inputValue.trim() !== '' && !options.some(option => option.label === inputValue)) {
-            const newOption = { label: inputValue, value: inputValue.toLowerCase() };
+            const newOption = { label: inputValue, value: inputValue };
             const updatedOptions = [...options, newOption];
             setSelectedValue(newOption);
             setInputValue('');
