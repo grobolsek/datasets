@@ -37,7 +37,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
     };
 
     const handleConfirmRemove = () => {
-        fetch(`/remove/${dataset.db_name}`, {
+        fetch(`/remove/${dataset.db_location}`, {
             method: 'DELETE',
         })
             .then((response) => {
@@ -47,7 +47,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
                 return response.json();
             })
             .then(() => {
-                onRemove(dataset.db_name);
+                onRemove(dataset.db_location);
                 handleCloseRemoveDialog();
             })
             .catch((error) => {
@@ -61,7 +61,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
     };
 
     const handleEditSave = (updatedDataset) => {
-        fetch(`/edit/${dataset.db_name}`, {
+        fetch(`/edit/${dataset.db_location}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
     };
 
     const renderDatasetProperties = () => {
-        const properties = Object.keys(dataset).filter(key => key.startsWith('db_') && key !== 'db_name');
+        const properties = Object.keys(dataset).filter(key => key.startsWith('db_') && key !== 'db_location');
         return (
             <Box sx={{
                 display: 'flex',

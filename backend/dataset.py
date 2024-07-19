@@ -1,5 +1,8 @@
-import Orange
+import urllib.request
+
 import yaml
+import Orange
+
 from database import Database
 
 
@@ -36,10 +39,13 @@ class Dataset:
 
         table = None
 
+        filename = f'../data/files/{self.dataset["location"]}'
         if self.file is None:
-            table = Orange.data.Table(self.dataset['url'])
+            urllib.request.urlretrieve(self.dataset['url'], filename)
         else:
-            pass  # Implement file handling if needed
+            with open(file, "rb") as f:
+                f.write(self.file)
+        table = Orange.data.Table(filename)
 
         target = table.domain.class_var and ("categorical" if table.domain.class_var.is_discrete else "numeric")
 
@@ -56,20 +62,22 @@ class Dataset:
         database.add()
 
     def edit(self, **kwargs):
-        old = Database(dataset={'name': self.dataset['name']})
+        old = Database(dataset={'location': self.dataset['location']})
         if kwargs.get('version') is not None:
             kwargs['version'] = self.change_version(kwargs['version'])
+
+        print(kwargs)
         old.edit(kwargs)
 
     def get_value(self):
-        return Database(dataset={'name': self.dataset['name']}).get_value()
+        return Database(dataset={'location': self.dataset['location']}).get_value()
 
     @staticmethod
     def get_all():
         return Database(dataset={}).get_all()
 
     def check_exists(self):
-        return Database({'name': self.dataset['name']}).check_exists()
+        return Database({'location': self.dataset['location']}).check_exists()
 
     @staticmethod
     def change_version(version: str):

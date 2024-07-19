@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 class Database:
     def __init__(self, dataset: dict):
         self.extended_datasets = dataset
-        self.connection = sqlite3.connect('datasets.sqlite')
+        self.connection = sqlite3.connect('../data/datasets.sqlite')
         self.connection.row_factory = sqlite3.Row
         self.cursor = self.connection.cursor()
         self.cursor.execute("PRAGMA foreign_keys = ON")
@@ -74,9 +74,9 @@ class Database:
 
             for tag in self.extended_datasets['tags']:
                 self._execute_with_retry("""
-                    INSERT INTO datasets_tags(db_name, tag_id) 
+                    INSERT INTO datasets_tags(db_location, tag_id) 
                     VALUES (?, ?)
-                """, (self.extended_datasets['name'], tag))
+                """, (self.extended_datasets['location'], tag))
 
             self.connection.commit()
             self.close()
@@ -91,13 +91,13 @@ class Database:
         if 'domain' in changes:
             self.exists_update('domains', 'domain', changes['domain'])
         if 'tags' in changes:
-            self._execute_with_retry('DELETE FROM datasets_tags WHERE db_name = ?',
-                                     (self.extended_datasets['name'],))
+            self._execute_with_retry('DELETE FROM datasets_tags WHERE db_location = ?',
+                                     (self.extended_datasets['location'],))
             self.connection.commit()
             for tag in changes['tags']:
                 self.exists_update('tags', 'tag', tag)
-                self._execute_with_retry('INSERT INTO datasets_tags (db_name, tag_id) VALUES (?, ?)',
-                                         (self.extended_datasets['name'], tag))
+                self._execute_with_retry('INSERT INTO datasets_tags (db_location, tag_id) VALUES (?, ?)',
+                                         (self.extended_datasets['location'], tag))
 
         removed_tags = deepcopy(changes)
         if 'tags' in changes:
@@ -108,12 +108,11 @@ class Database:
 
         set_clause = ', '.join([f"db_{key} = ?" for key in removed_tags.keys()])
         values = list(removed_tags.values())
-        if len(values) == 0:
-            return
-        values.append(self.extended_datasets['name'])
+        if values:
+            values.append(self.extended_datasets['location'])
 
-        sql_query = f"UPDATE datasets SET {set_clause} WHERE db_name = ?"
-        self._execute_with_retry(sql_query, tuple(values))
+            sql_query = f"UPDATE datasets SET {set_clause} WHERE db_location = ?"
+            self._execute_with_retry(sql_query, tuple(values))
 
         self.connection.commit()
         self.close()
@@ -122,12 +121,12 @@ class Database:
         query = """
                 SELECT d.*, GROUP_CONCAT(t.tag, ', ') as tags
                 FROM datasets d
-                LEFT JOIN datasets_tags dt ON d.db_name = dt.db_name
+                LEFT JOIN datasets_tags dt ON d.db_location = dt.db_location
                 LEFT JOIN tags t ON dt.tag_id = t.tag
-                WHERE LOWER(d.db_name) = LOWER(?)
-                GROUP BY d.db_name
+                WHERE LOWER(d.db_location) = LOWER(?)
+                GROUP BY d.db_location
                 """
-        self._execute_with_retry(query, (self.extended_datasets['name'],))
+        self._execute_with_retry(query, (self.extended_datasets['location'],))
         row = self.cursor.fetchone()
 
         if row:
@@ -145,9 +144,9 @@ class Database:
         query = f"""
                 SELECT *, GROUP_CONCAT(t.tag, ', ') as db_tags
                 FROM datasets d
-                LEFT JOIN datasets_tags dt ON d.db_name = dt.db_name
+                LEFT JOIN datasets_tags dt ON d.db_location = dt.db_location
                 LEFT JOIN tags t ON dt.tag_id = t.tag
-                GROUP BY d.db_name
+                GROUP BY d.db_location
                 """
         self.cursor.execute(query)
         rows = self.cursor.fetchall()
@@ -170,11 +169,11 @@ class Database:
 
     def check_exists(self):
         self._execute_with_retry(
-            'SELECT * FROM datasets WHERE db_name = ?',
-            (self.extended_datasets['name'],)
+            'SELECT * FROM datasets WHERE db_location = ?',
+            (self.extended_datasets['location'],)
         )
         if self.cursor.fetchone() is not None:
-            logging.warning(f'Dataset {self.extended_datasets['name']} already exists in database')
+            logging.warning(f'Dataset {self.extended_datasets['location']} already exists in database')
             return True
         return False
 

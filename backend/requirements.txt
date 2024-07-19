@@ -1,6 +1,4 @@
 Flask~=3.0.3
 flask_cors
 PyYAML~=6.0.1
-PyQt5
-PyQtWebEngine
 orange3
