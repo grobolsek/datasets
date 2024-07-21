@@ -11,11 +11,13 @@ import {
     Stack,
     TextField,
     Typography,
-    Tooltip
+    Tooltip,
+    Alert
 } from '@mui/material';
 import MultiAutoComplete from './MultiAutoComplete';
 import ArrowCircleUpRoundedIcon from '@mui/icons-material/ArrowCircleUpRounded';
 import RotateLeftRoundedIcon from '@mui/icons-material/RotateLeftRounded';
+import CloseIcon from '@mui/icons-material/Close';
 import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
 
 
@@ -44,24 +46,22 @@ const EditDialog = ({onClose, initialData, onSave}) => {
             file: undefined
         }
     );
+    const [error, setError] = useState(null);
 
     const [domains, setDomains] = useState(null);
+    const [languages, setLanguages] = useState(null);
+    const [tags, setTags] = useState(null);
     useEffect(() => {
         fetch('/domains')
             .then(res => res.json())
-            .then(setDomains); }, []);
-
-    const [languages, setLanguages] = useState(null);
-    useEffect(() => {
+            .then(setDomains);
         fetch('/languages')
             .then(res => res.json())
-            .then(setLanguages); }, []);
-
-    const [tags, setTags] = useState(null);
-    useEffect(() => {
+            .then(setLanguages);
         fetch('/tags')
             .then(res => res.json())
-            .then(setTags); }, []);
+            .then(setTags);
+    }, []);
 
     const handleChange = useCallback((name, newValue) => {
         console.log("Setting", name, "to", newValue);
@@ -100,6 +100,7 @@ const EditDialog = ({onClose, initialData, onSave}) => {
         const formData = new FormData();
         if (editedData.file) {
             formData.append('file', editedData.file, editedData.file.name);
+            updatedData['location'] = editedData.file.name;
         }
         formData.append('data', JSON.stringify(updatedData));
         fetch(`/edit/${initialData?.dataset_id || -1}`, {
@@ -108,13 +109,16 @@ const EditDialog = ({onClose, initialData, onSave}) => {
         })
             .then((response) => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    console.log("not good");
+                    response.text()
+                        .then((text) =>
+                            setError(`Error updating dataset: ${text || response.statusText}`));
                 }
                 return response.json();
             })
             .then(onClose)
             .catch((error) => {
-                console.error('Error updating dataset:', error);
+                setError(`Error updating dataset: ${error}`);
             });
     }, [editedData, initialData, onClose]);
 
@@ -158,7 +162,7 @@ const EditDialog = ({onClose, initialData, onSave}) => {
 
     const allowSave = useMemo(() =>
         !!(initialData || (editedData.name && editedData.location && editedData.file)),
-        [editedData.name, editedData.location, editedData.file]
+        [editedData.name, editedData.location, editedData.file, initialData]
     )
 
     console.log("Domains", domains, "Languages", languages, "Tags", tags);
@@ -171,6 +175,24 @@ const EditDialog = ({onClose, initialData, onSave}) => {
                 onDragOver={onDragOver}
                 fullWidth
                 maxWidth="md">
+            { !!error &&
+                <Alert
+                    severity="error"
+                    sx={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2 }}
+                    action={
+                        <IconButton
+                            aria-label="close"
+                            color="inherit"
+                            size="small"
+                            onClick={() => { setError(null); } }
+                        >
+                        <CloseIcon fontSize="inherit" />
+                        </IconButton>
+                    }
+                >
+                    {error}
+                </Alert>
+            }
             <DialogContent spacing={50}>
                 <Stack spacing={2} direction="row">
                     <TextField

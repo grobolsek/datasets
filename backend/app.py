@@ -44,7 +44,8 @@ def edit_dataset(dataset_id):
         data["file"] = request.files["file"].read()
     if dataset_id == "-1":
         dataset_id = dataset.add()
-    dataset.update(dataset_id, data)
+    if (res := dataset.update(dataset_id, data)) is not None:
+        return res
     return dataset.get_data(dataset_id), 201
 
 

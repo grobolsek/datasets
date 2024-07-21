@@ -1,6 +1,7 @@
 import urllib.request
 import os.path
 import json
+from tempfile import NamedTemporaryFile
 
 import yaml
 import Orange
@@ -21,6 +22,11 @@ def update(dataset_id: int, changes: dict):
     """
     Updates the dataset with the specified changes.
     """
+    class DatasetError(Exception):
+        def __init__(self, message, status):
+            self.message = message
+            self.status = status
+
     db = Database()
 
     def update_tags():
@@ -42,24 +48,43 @@ def update(dataset_id: int, changes: dict):
     def update_file():
         file = changes.pop('file', None)
         location = changes.get('location', None)
-        if file is None and location is None:
+        assert (file is None) == (location is None), \
+            "Either both or neither file and location should be provided"
+        if file is None:
             return False
 
-        # Remove any existing file
+        # Todo: file locations depend on domain?
+        existing = db.fetchsingle(
+            """SELECT name FROM datasets
+               WHERE location = ? AND dataset_id != ?""",
+            (location, dataset_id))
+        if existing is not None:
+            raise DatasetError(
+              f"File with the same name already exists for data set '{existing}'",
+              409)
+
+        with NamedTemporaryFile(
+                delete=False,
+                suffix=os.path.splitext(location)[1]) as f:
+            tempfilename = f.name
+            f.write(file)
+        try:
+            table = Orange.data.Table(tempfilename)
+        except Exception as e:
+            os.remove(tempfilename)
+            raise DatasetError(f"Unreadable file: {e}", 400)
+
+        # Todo: file locations depend on domain?
         old_location = db.fetchsingle(
             "SELECT location FROM datasets WHERE dataset_id = ?",
             (dataset_id,))
         if old_location is not None and os.path.exists(old_location):
+            # path should always exist, unless we're in mid-debugging, so a check doesn't hurt
             os.remove(f'../data/files/{old_location}')
-        location = location or old_location
+
+        # Todo: file locations depend on domain?
         filename = f'../data/files/{location}'
-
-        if file is not None:
-            # ... if it's None, we're filling the database with existing files
-            with open(filename, "wb") as f:
-                f.write(file)
-
-        table = Orange.data.Table(filename)
+        os.replace(tempfilename, filename)
 
         target = ("none" if table.domain.class_var is None
                   else "categorical" if table.domain.class_var.is_discrete
@@ -94,11 +119,13 @@ def update(dataset_id: int, changes: dict):
         secondary = int(secondary) + 1
         changes["version"] = f'{primary}.{secondary}'
 
-    changes = changes.copy()
-    changed = update_tags() + update_file() # call both, no short-circuit!
-
-    if changes or changed:
-        set_version()
+    try:
+        changes = changes.copy()
+        is_changed = update_tags() + update_file() # call both, don't short-circuit!
+        if changes or is_changed:
+            set_version()
+    except DatasetError as e:
+        return e.message, e.status
 
     if not changes:
         return

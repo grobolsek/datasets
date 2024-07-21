@@ -18,8 +18,10 @@ for (domain, location), data in datasets:
     data.pop('seealso', None)
 
     filename = f'../data/files/{location}'
-    if not os.path.exists(filename):
-        urllib.request.urlretrieve(data['url'], filename)
+    if os.path.exists(filename):
+        data["file"] = open(filename, "rb").read()
+    else:
+        data["file"] = urllib.request.urlopen(data['url']).read()
 
     dataset_id = dataset.add()
     dataset.update(dataset_id, data)
