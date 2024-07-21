@@ -1,5 +1,6 @@
 from collections import defaultdict
 import json
+import os
 import sqlite3
 
 import Orange
@@ -7,6 +8,10 @@ from flask import Flask, request
 from flask_cors import CORS
 
 import dataset, datasets
+
+
+if not os.path.exists("../data/files"):
+    os.makedirs("../data/files")
 
 
 app = Flask(__name__)

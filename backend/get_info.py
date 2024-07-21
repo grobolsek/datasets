@@ -4,6 +4,8 @@ import os
 
 import dataset
 
+if not os.path.exists("../data/files"):
+    os.makedirs("../data/files")
 
 datasets = json.loads(urllib.request.urlopen("https://raw.githubusercontent.com/biolab/datasets/master/__INFO__").read())
 
