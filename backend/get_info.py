@@ -26,6 +26,8 @@ for (domain, location), data in datasets:
         data["file"] = urllib.request.urlopen(data['url']).read()
 
     dataset_id = dataset.add()
-    dataset.update(dataset_id, data)
+    if (res := dataset.update(dataset_id, data)) is not None:
+        print(res[0])
+        dataset.remove(dataset_id)
 
 dataset.update_info_file()
