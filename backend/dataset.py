@@ -98,6 +98,19 @@ def update(dataset_id: int, changes: dict):
         })
         return True
 
+    def check_custom():
+        if "custom" not in changes:
+            return
+        try:
+            custom = yaml.load(changes["custom"], Loader=yaml.Loader)
+        except yaml.YAMLError as e:
+            raise DatasetError(f"Invalid custom YAML: {e}", 400)
+        if not isinstance(custom, dict):
+            raise DatasetError("Custom data must be a dictionary", 400)
+        non_strings = [key for key in custom if not isinstance(key, str)]
+        if non_strings:
+            raise DatasetError(f"Custom keys must be strings, not {type(non_string).__name__}", 400)
+
     def set_version():
         old_version = db.fetchsingle(
             "SELECT version FROM datasets WHERE dataset_id = ?",
@@ -121,6 +134,7 @@ def update(dataset_id: int, changes: dict):
 
     try:
         changes = changes.copy()
+        check_custom()
         is_changed = update_tags() + update_file() # call both, don't short-circuit!
         if changes or is_changed:
             set_version()
@@ -184,7 +198,9 @@ def update_info_file():
         if references := dataset.pop("reference_list", None):
             dataset['references'] = references.split('\n\n')
         if custom := dataset.pop("custom", None):
-            dataset.update(yaml.load(custom, Loader=yaml.Loader))
+            custom_dict = yaml.load(custom, Loader=yaml.Loader)
+            assert isinstance(custom_dict, dict)
+            dataset.update(custom_dict)
         datasets.append(
             [[dataset.pop("domain", "core"),
               dataset.pop("location")],
