@@ -18,27 +18,23 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
 
     const handleChange = (event, newValue) => {
         setSelectedValues(newValue);
-        // Pass the updated values back to the parent component
-        if (onChange) {
-            onChange(newValue);
-        }
+        onChange(newValue);
+        console.log(newValue);
     };
 
     const handleAddOption = () => {
         if (inputValue.trim() !== '' && !selectedValues.includes(inputValue)) {
-            const newOption = { label: inputValue, value: inputValue.toLowerCase() };
+            const newOption = inputValue.toLowerCase();
             setSelectedValues([...selectedValues, newOption]);
             setInputValue('');
-            // Notify parent component of the change
-            if (onChange) {
-                onChange([...selectedValues, newOption]);
-            }
+            onChange([...selectedValues, newOption]);
         }
     };
 
     return (
         <Autocomplete
             multiple
+            freeSolo
             id="multi-choice-autocomplete"
             options={options}
             onChange={handleChange}
@@ -46,7 +42,8 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
             inputValue={inputValue}
             onInputChange={handleInputChange}
             getOptionLabel={(option) => option.label || option}
-            sx={{mt:3}}
+            disableClearable
+
             renderInput={(params) => (
                 <TextField
                     {...params}
@@ -58,7 +55,13 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
                         endAdornment: (
                             <React.Fragment>
                                 {params.InputProps.endAdornment}
-                                <Button onClick={handleAddOption}>Add</Button>
+                                { !!inputValue.trim() &&
+                                <Button
+                                        onClick={handleAddOption}
+                                        sx={{textTransform: "none"}}>
+                                    ADD '{inputValue.trim()}'
+                                </Button>
+                                }
                             </React.Fragment>
                         ),
                     }}

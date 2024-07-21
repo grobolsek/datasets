@@ -1,0 +1,18 @@
+.dataset-box .actions {
+    opacity: 0;
+    animation: fadeOut 1s;
+}
+
+.dataset-box:hover .actions, .Mui-expanded .actions {
+    opacity: 1;
+    animation: fadeIn 1s;
+}
+
+.MuiAccordionSummary-content.MuiAccordionSummary-contentGutters,
+div.MuiAccordionSummary-content.Mui-expanded.MuiAccordionSummary-contentGutters.css-eqpfi5-MuiAccordionSummary-content{
+    margin: 12px 0 6px 0;
+}
+
+.MuiAccordionDetails-root {
+    padding-top: 0 !important;
+}

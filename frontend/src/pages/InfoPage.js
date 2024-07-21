@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Button, Container, Typography } from '@mui/material';
 import CollapseComponent from '../components/CollapseComponent';
 import EditDialog from '../components/EditDialog'; // Import EditDialog component
-import { useNavigate } from "react-router-dom";
+import CustomAutocomplete from "../components/MultiAutoComplete";
 
 const InfoPage = () => {
-    const [datasets, setDatasets] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [datasets, setDatasets] = useState(null);
     const [error, setError] = useState(null);
-    const [editDialogOpen, setEditDialogOpen] = useState(false); // State for EditDialog
-    const [selectedDataset, setSelectedDataset] = useState(null); // State to hold dataset being edited
-    const navigate = useNavigate();
+    const [edited, setEdited] = useState(null); // State to hold dataset being edited
+    const [expanded, setExpanded] = useState(false); // State to hold expanded dataset
 
     useEffect(() => {
         fetch('/get')
@@ -22,107 +20,91 @@ const InfoPage = () => {
             })
             .then((data) => {
                 setDatasets(data);
-                setLoading(false);
             })
             .catch((error) => {
                 console.error('Error fetching data:', error);
                 setError(error);
-                setLoading(false);
             });
     }, []);
 
-    const handleRemoveDataset = (datasetLocation) => {
-        setDatasets((prevDatasets) => prevDatasets.filter((dataset) => dataset.db_location !== datasetLocation));
-    };
+    const handleCloseEditDialog = useCallback((newData, reason) => {
+        if (reason === "backdropClick") {
+            return;
+        }
+        if (newData) {
+            setDatasets((prevDatasets) => ({
+                ...prevDatasets,
+                [edited]: newData
+            }));
+        }
+        setEdited(null);
+    }, [edited]);
 
-    const handleEditDataset = (dataset) => {
-        setSelectedDataset(dataset);
-        setEditDialogOpen(true);
-    };
-
-    const handleCloseEditDialog = () => {
-        setSelectedDataset(null);
-        setEditDialogOpen(false);
-    };
-
-    const handleSaveDataset = (changedFields) => {
-        // Prepare data to send to backend
-        const { db_location, ...updates } = changedFields;
-        fetch(`/edit/${db_location}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updates),
-        })
+    const handleRemoveDataset = useCallback((dataset_id) => {
+        // ask for confirmation before removing
+        if (!window.confirm(
+            `Are you sure you want to remove dataset ${datasets[dataset_id].name}?`)
+        ) {
+            return;
+        }
+        fetch(`/remove/${dataset_id}`)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                return response.json();
-            })
-            .then((updatedDataset) => {
-                // Update dataset in local state with changes from backend if necessary
-                const updatedDatasets = datasets.map((dataset) =>
-                    dataset.db_location === updatedDataset.db_location ? updatedDataset : dataset
+                setDatasets((prevDatasets) =>
+                    Object.fromEntries(
+                        Object.entries(prevDatasets)
+                            .filter(([location]) => location !== dataset_id)
+                    )
                 );
-                setDatasets(updatedDatasets);
-                handleCloseEditDialog(); // Close the edit dialog
             })
-            .catch((error) => {
-                console.error('Error updating dataset:', error);
-            });
-    };
+    }, [datasets]);
 
-    if (loading) {
-        return <p>Loading...</p>;
+    const handleExpansion = (dataset_id, expanded) => {
+        setExpanded(expanded && dataset_id);
     }
-
-    if (error) {
-        return <p>Error: {error.message}</p>;
-    }
-
-    const redirectToAddPage = () => {
-        let path = '/add';
-        navigate(path);
-    };
 
     return (
+        error ? <p>Error: {error.message}</p> :
+            datasets === null ? <p>Loading...</p> :
         <Container>
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography component="h1" variant="h4">
-                    Dataset Info
+                <Typography component="h1" variant="h4" sx={{margin: "24px 0"}}>
+                    Repository of Orange Data Sets
                 </Typography>
                 <Button
-                    sx={{
-                        bgcolor: '#00e676',
-                        ':hover': {
-                            bgcolor: '#00a152',
-                        },
-                    }}
                     variant="contained"
-                    onClick={redirectToAddPage}
+                    onClick={() => setEdited(-1)}
                 >
-                    ADD
+                    New Data Set
                 </Button>
             </Box>
-            {datasets.map((dataset, index) => (
+            {Object.entries(datasets)
+                .sort(([, a], [, b]) => a.name.localeCompare(b.name))
+                .map(([dataset_id, dataset]) => (
                 <CollapseComponent
-                    key={index}
+                    key={`${dataset_id}-${dataset.version}`}
+                    expanded={expanded === dataset_id}
                     dataset={dataset}
-                    onRemove={handleRemoveDataset}
-                    onEdit={() => handleEditDataset(dataset)} // Pass function to handle edit
+                    onChange={(e, expanded) => handleExpansion(dataset_id, expanded) }
+                    onRemove={() => { handleRemoveDataset(dataset_id) }}
+                    startEdit={() => { setEdited(dataset_id)}}
                 />
             ))}
-            {/* EditDialog component */}
-            {selectedDataset && (
+            {edited &&
                 <EditDialog
-                    open={editDialogOpen}
+                    location={edited}
+                    initialData={datasets[edited]}
                     onClose={handleCloseEditDialog}
-                    dataset={selectedDataset}
-                    onSave={handleSaveDataset}
-                />
-            )}
+                >
+                    <CustomAutocomplete
+                        options={[]}
+                        value={datasets[edited]?.tags || []}
+                        placeholder="Add Tags"
+                    />
+                </EditDialog>
+            }
         </Container>
     );
 };

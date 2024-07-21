@@ -1,208 +1,88 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState  } from 'react';
 import {
     Accordion,
     AccordionSummary,
     AccordionDetails,
     Typography, // Ensure Typography is imported from MUI
+    Chip,
     Box,
-    Button,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
+    IconButton,
+    Divider
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CopyButton from './CopyButton';
-import EditDialog from './EditDialog';
-import CustomAutocomplete from './MultiAutoComplete';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForeverRounded';
 
-const CollapseComponent = ({ dataset: initialDataset, onRemove }) => {
+const CollapseComponent = ({ dataset: initialDataset, startEdit, onRemove,
+                               expanded, onChange }) => {
     const [dataset, setDataset] = useState(initialDataset);
-    const [openRemoveDialog, setOpenRemoveDialog] = useState(false);
-    const [openEditDialog, setOpenEditDialog] = useState(false);
-    const [hovered, setHovered] = useState(false);
-
-    useEffect(() => {
-        setDataset(initialDataset);
-    }, [initialDataset]);
 
     const handleRemoveClick = (e) => {
         e.stopPropagation();
-        setOpenRemoveDialog(true);
-    };
-
-    const handleCloseRemoveDialog = () => {
-        setOpenRemoveDialog(false);
-    };
-
-    const handleConfirmRemove = () => {
-        fetch(`/remove/${dataset.db_location}`, {
-            method: 'DELETE',
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(() => {
-                onRemove(dataset.db_location);
-                handleCloseRemoveDialog();
-            })
-            .catch((error) => {
-                console.error('Error removing dataset:', error);
-            });
+        onRemove();
     };
 
     const handleEditClick = (e) => {
         e.stopPropagation();
-        setOpenEditDialog(true);
-    };
-
-    const handleEditSave = (updatedDataset) => {
-        fetch(`/edit/${dataset.db_location}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updatedDataset),
-        })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then((data) => {
-                setDataset(data);
-                handleCloseEditDialog();
-            })
-            .catch((error) => {
-                console.error('Error editing dataset:', error);
-            });
-    };
-
-    const handleCloseEditDialog = () => {
-        setOpenEditDialog(false);
-    };
-
-    const renderDatasetProperties = () => {
-        const properties = Object.keys(dataset).filter(key => key.startsWith('db_') && key !== 'db_location');
-        return (
-            <Box sx={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                maxHeight: '500px',
-                overflowY: 'auto',
-                padding: '8px'
-            }}>
-                {properties.map((key) => (
-                    <Box key={key} sx={{
-                        flex: '1 1 calc(50% - 8px)',
-                        marginBottom: '16px',
-                        boxSizing: 'border-box',
-                        padding: '8px',
-                        borderBottom: '1px solid #ddd'
-                    }}>
-                        <Typography variant='h6'>{key.substring(3)}</Typography>
-                        <Typography>{key === 'db_tags'
-                            ? dataset[key].join(', ')
-                            : dataset[key]}
-                        </Typography>
-                    </Box>
-                ))}
-            </Box>
-        );
+        startEdit();
     };
 
     return (
         <>
-            <Accordion
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
+            <Accordion className="dataset-box" expanded={expanded} onChange={onChange}
             >
                 <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     aria-controls="panel-content"
-                    sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    sx={{ display: 'flex',
+                        alignItems: 'center', justifyContent: 'space-between' }}
+                    style={{margin: 0}}
                 >
-                    <Typography variant="h6" sx={{ flexGrow: 1 }}>{dataset.db_name}</Typography>
+                    <Box sx={{display: 'flex', flexGrow: 1}}>
+                      <Typography variant="button" sx={{fontSize: "1.1em"}}>
+                          {dataset.name}
+                      </Typography>
+                        {  dataset.tags && dataset.tags.map((tag) =>
+                            <Chip variant="outlined" label={tag} key={tag}
+                            sx={{mx: 1}}/>)
+                        }
+                    </Box>
                     <Box
+                        className="actions"
+                        variant="contained"
                         sx={{
                             display: 'flex',
-                            alignItems: 'center',
-                            opacity: hovered ? 1 : 0,
                             transition: 'opacity 0.4s ease',
                             mx: 2
                         }}
                     >
-                        <Button
-                            sx={{
-                                bgcolor: '#ff9100',
-                                ':hover': {
-                                    bgcolor: '#b26500',
-                                },
-                                marginRight: 1,
-                            }}
-                            variant="contained"
-                            onClick={handleEditClick}
-                        >
-                            EDIT
-                        </Button>
-                        <Button
-                            sx={{
-                                bgcolor: '#d50000',
-                                ':hover': {
-                                    bgcolor: '#950000',
-                                },
-                                marginRight: 1,
-                            }}
-                            variant="contained"
-                            onClick={handleRemoveClick}
-                        >
-                            REMOVE
-                        </Button>
-                        <CopyButton
-                            textToCopy={JSON.stringify(dataset, null, 2)}
-                            onClick={(e) => { e.stopPropagation(); }}
-                        />
+                        <IconButton onClick={handleEditClick}>
+                            <EditRoundedIcon />
+                        </IconButton>
+                        <IconButton onClick={handleRemoveClick}>
+                            <DeleteForeverIcon />
+                        </IconButton>
                     </Box>
                 </AccordionSummary>
-                <AccordionDetails sx={{ p: 3, backgroundColor: '#e0e0e0', borderRadius: '16px 16px 0 0' }}>
-                    {renderDatasetProperties()}
+                <AccordionDetails sx={{ p: 2, m: 0 }}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', flexWrap: 'wrap', maxHeight: '500px', overflowY: 'auto', }}>
+                        <Typography variant="overline" my={1}>
+                            <b>{dataset.instances}</b> instances,&nbsp;
+                            <b>{dataset.variables}</b> variables,&nbsp;
+                            <b>{dataset.target.replace("none", "no")}</b> target.&nbsp;
+                            {!!dataset.language && dataset.language !== "English" &&
+                                <><b>{dataset.language}</b>. </>}
+                            {dataset.collection && <>
+                                Source: <b>{dataset.collection}{!!dataset.year && ", " + dataset.year}.</b>
+                            </>}
+                        </Typography>
+                        <Divider />
+                        <Typography mt={2} mb={4}>
+                            {dataset.description}
+                        </Typography>
+                    </Box>
                 </AccordionDetails>
             </Accordion>
-
-            <Dialog open={openRemoveDialog} onClose={handleCloseRemoveDialog}>
-                <DialogTitle>Confirm Remove</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Are you sure you want to remove the dataset "{dataset.db_name}"?
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleCloseRemoveDialog} color="primary">
-                        Cancel
-                    </Button>
-                    <Button onClick={handleConfirmRemove} color="secondary" autoFocus>
-                        Confirm
-                    </Button>
-                </DialogActions>
-            </Dialog>
-
-            <EditDialog
-                open={openEditDialog}
-                onClose={handleCloseEditDialog}
-                dataset={dataset}
-                onSave={handleEditSave}
-            >
-                <CustomAutocomplete
-                    options={[]}
-                    value={dataset.tags}
-                    placeholder="Add Tags"
-                />
-            </EditDialog>
         </>
     );
 };
