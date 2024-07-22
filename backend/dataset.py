@@ -1,12 +1,13 @@
 import urllib.request
 import os.path
 import json
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 
 import yaml
 import Orange
 
 from database import Database
+from utils import get_url
 
 
 def add() -> int:
@@ -47,44 +48,53 @@ def update(dataset_id: int, changes: dict):
 
     def update_file():
         file = changes.pop('file', None)
-        location = changes.get('location', None)
+        location = changes.get('location')
         assert (file is None) == (location is None), \
             "Either both or neither file and location should be provided"
         if file is None:
             return False
 
-        # Todo: file locations depend on domain?
+        domain = changes.get('domain')
+        if domain is None:
+            domain = db.fetchsingle(
+                "SELECT domain FROM datasets WHERE dataset_id = ?",
+                (dataset_id, ))
+            if domain is None:
+                domain = "core"
+
         existing = db.fetchsingle(
             """SELECT name FROM datasets
-               WHERE location = ? AND dataset_id != ?""",
-            (location, dataset_id))
+               WHERE location = ? AND domain = ? AND dataset_id != ?""",
+            (location, domain, dataset_id))
         if existing is not None:
             raise DatasetError(
               f"File with the same name already exists for data set '{existing}'",
               409)
 
-        with NamedTemporaryFile(
-                delete=False,
-                suffix=os.path.splitext(location)[1]) as f:
-            tempfilename = f.name
-            f.write(file)
-        try:
-            table = Orange.data.Table(tempfilename)
-        except Exception as e:
-            os.remove(tempfilename)
-            raise DatasetError(f"Unreadable file: {e}", 400)
+        with TemporaryDirectory() as tempdir:
+            tempfilename = os.path.join(tempdir, location)
+            with open(tempfilename, "wb") as f:
+                f.write(file)
+            try:
+                table = Orange.data.Table(tempfilename)
+            except Exception as e:
+                raise DatasetError(f"Unreadable file: {e}", 400) from e
 
-        # Todo: file locations depend on domain?
-        old_location = db.fetchsingle(
-            "SELECT location FROM datasets WHERE dataset_id = ?",
+            directory = os.path.join("..", "data", "files", domain)
+            filename = os.path.join(directory, location)
+            os.makedirs(directory, exist_ok=True)
+            os.replace(tempfilename, filename)
+
+        old_location = db.fetchone(
+            "SELECT location, domain FROM datasets WHERE dataset_id = ?",
             (dataset_id,))
-        if old_location is not None and os.path.exists(old_location):
-            # path should always exist, unless we're in mid-debugging, so a check doesn't hurt
-            os.remove(f'../data/files/{old_location}')
-
-        # Todo: file locations depend on domain?
-        filename = f'../data/files/{location}'
-        os.replace(tempfilename, filename)
+        if old_location is not None and old_location[0]:
+            old_location, old_domain = old_location
+            old_filename = os.path.join("..", "data", "files", old_domain, old_location)
+            # old file may not exist if we're debugging something, so let's check
+            if old_filename != filename and os.path.exists(old_filename):
+                print(f"X{old_location}X{old_domain}X{old_filename}X")
+                os.remove(old_filename)
 
         target = ("none" if table.domain.class_var is None
                   else "categorical" if table.domain.class_var.is_discrete
@@ -99,7 +109,7 @@ def update(dataset_id: int, changes: dict):
         return True
 
     def check_custom():
-        if "custom" not in changes:
+        if not (custom := changes.get("custom", "").strip()):
             return
         try:
             custom = yaml.load(changes["custom"], Loader=yaml.Loader)
@@ -188,12 +198,13 @@ def update_info_file():
         GROUP BY d.dataset_id
         """)
     datasets = []
+    sc_datasets = []  # backward compatibility
     for row in rows:
         dataset = dict(row)
         del dataset['dataset_id']
         dataset["title"] = dataset["name"]
         dataset["name"], _ = os.path.splitext(dataset["location"])
-        dataset["url"] = f"http://localhost/files/{dataset['location']}"
+        dataset["url"] = get_url(dataset["location"], dataset["domain"])
         dataset['tags'] = dataset['tags'].split(', ') if dataset['tags'] else []
         if references := dataset.pop("reference_list", None):
             dataset['references'] = references.split('\n\n')
@@ -202,10 +213,18 @@ def update_info_file():
             assert isinstance(custom_dict, dict)
             dataset.update(custom_dict)
         datasets.append(
-            [[dataset.pop("domain", "core"),
-              dataset.pop("location")],
+            [[dataset.get("domain", "core"),
+              dataset["location"]],
              dataset]
         )
-    with open("../data/__INFO__", "w") as f:
+        if dataset["domain"] == "sc":
+            sc_datasets.append([
+                dataset["location"],
+                dataset
+            ])
+
+    with open("../data/files/__INFO__", "w") as f:
         json.dump(datasets, f, indent=2)
+    with open("../data/files/sc/__INFO__", "w") as f:
+        json.dump(sc_datasets, f, indent=2)
     return datasets

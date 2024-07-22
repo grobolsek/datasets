@@ -3,7 +3,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import {Button} from "@mui/material";
 
-const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
+const MultiAutoComplete = ({ options, label, placeholder, values, onChange, sx }) => {
     const [selectedValues, setSelectedValues] = useState(values);
     const [inputValue, setInputValue] = useState('');
 
@@ -19,7 +19,6 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
     const handleChange = (event, newValue) => {
         setSelectedValues(newValue);
         onChange(newValue);
-        console.log(newValue);
     };
 
     const handleAddOption = () => {
@@ -35,6 +34,7 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
         <Autocomplete
             multiple
             freeSolo
+            sx={sx}
             id="multi-choice-autocomplete"
             options={options}
             onChange={handleChange}
@@ -48,8 +48,8 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
                 <TextField
                     {...params}
                     variant="outlined"
-                    label={placeholder}
-                    placeholder="Select or type new options"
+                    label={label}
+                    placeholder={placeholder || "Select or type ..."}
                     InputProps={{
                         ...params.InputProps,
                         endAdornment: (
