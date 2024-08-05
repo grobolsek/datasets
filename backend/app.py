@@ -1,64 +1,65 @@
 from collections import defaultdict
+import json
+import os
 import sqlite3
-from dataset import Dataset
 
 import Orange
 from flask import Flask, request
 from flask_cors import CORS
 
+import dataset, datasets
+
+
+if not os.path.exists("../data/files"):
+    os.makedirs("../data/files")
+
+
 app = Flask(__name__)
 CORS(app)
 
-
-@app.route('/datasets/get')
+@app.route('/datasets/get', methods=['GET'])
 def get_datasets():
-    return Dataset.get_all()
+    return datasets.get_all()
 
 
-@app.route('/datasets/table/<string:table_name>/<string:column_name>')
-def get_table(column_name, table_name):
-    return Dataset.get_table(column_name, table_name), 200
+@app.route("/datasets/tags")
+def get_tags():
+    return datasets.get_tags(), 200
 
 
-@app.route('/datasets/get/<string:dataset_location>')
-def get_datasets_single(dataset_location):
-    d = Dataset(location=dataset_location)
-    data = d.get_value()
-    data['db_tags'] = data.pop('tags')
-    return data, 200
+@app.route("/datasets/languages")
+def get_languages():
+    return datasets.get_languages(), 200
 
 
-@app.route('/datasets/remove/<dataset_location>', methods=['DELETE'])
-def remove_dataset(dataset_location):
-    connection = sqlite3.connect('../data/datasets.sqlite')
-    cursor = connection.cursor()
-    cursor.execute('DELETE FROM datasets WHERE db_location = ?', (dataset_location,))
-    connection.commit()
-    connection.close()
-    return {"message": f"Dataset '{dataset_location}' has been deleted successfully."}, 200
+@app.route("/datasets/domains")
+def get_domains():
+    return datasets.get_domains(), 200
 
 
-@app.route('/datasets/edit/<dataset_location>', methods=['PUT'])
-def edit_dataset(dataset_location):
-    changes = request.get_json()
-    print(changes)
-    for key, value in changes.items():
-        if isinstance(value, list):
-            for i, v in enumerate(value):
-                if isinstance(v, dict):
-                    changes[key][i] = v['value']
-        elif isinstance(value, dict):
-            changes[key] = value['value']
-    print(changes)
-    try:
-        d = Dataset(location=dataset_location)
-        d.edit(**changes)
-        data = d.get_value()
-        data['db_tags'] = data.pop('tags')
-        return data, 200
-    except Exception as e:
-        return {"message": str(e)}, 400
+@app.route('/datasets/get/<string:dataset_id>')
+def get_dataset(dataset_id):
+    return dataset.get_data(dataset_id).get(), 200
+
+
+@app.route('/datasets/edit/<dataset_id>', methods=['POST'])
+def edit_dataset(dataset_id):
+    data = json.loads(request.form["data"])
+    if "file" in request.files:
+        data["file"] = request.files["file"].read()
+    if dataset_id == "-1":
+        dataset_id = dataset.add()
+    if (res := dataset.update(dataset_id, data)) is not None:
+        return res
+    return dataset.get_data(dataset_id), 201
+
+
+@app.route('/datasets/remove/<dataset_id>', methods=['GET'])
+def remove_dataset(dataset_id):
+    dataset.remove(dataset_id)
+    return '', 204
 
 
 if __name__ == '__main__':
+    # app.run(debug=True)
     app.run()
