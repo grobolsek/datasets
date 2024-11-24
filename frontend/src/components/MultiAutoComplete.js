@@ -3,7 +3,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import {Button} from "@mui/material";
 
-const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
+const MultiAutoComplete = ({ options, label, placeholder, values, onChange, sx }) => {
     const [selectedValues, setSelectedValues] = useState(values);
     const [inputValue, setInputValue] = useState('');
 
@@ -18,27 +18,23 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
 
     const handleChange = (event, newValue) => {
         setSelectedValues(newValue);
-        // Pass the updated values back to the parent component
-        if (onChange) {
-            onChange(newValue);
-        }
+        onChange(newValue);
     };
 
     const handleAddOption = () => {
         if (inputValue.trim() !== '' && !selectedValues.includes(inputValue)) {
-            const newOption = { label: inputValue, value: inputValue.toLowerCase() };
+            const newOption = inputValue.toLowerCase();
             setSelectedValues([...selectedValues, newOption]);
             setInputValue('');
-            // Notify parent component of the change
-            if (onChange) {
-                onChange([...selectedValues, newOption]);
-            }
+            onChange([...selectedValues, newOption]);
         }
     };
 
     return (
         <Autocomplete
             multiple
+            freeSolo
+            sx={sx}
             id="multi-choice-autocomplete"
             options={options}
             onChange={handleChange}
@@ -46,19 +42,26 @@ const MultiAutoComplete = ({ options, placeholder, values, onChange }) => {
             inputValue={inputValue}
             onInputChange={handleInputChange}
             getOptionLabel={(option) => option.label || option}
-            sx={{mt:3}}
+            disableClearable
+
             renderInput={(params) => (
                 <TextField
                     {...params}
                     variant="outlined"
-                    label={placeholder}
-                    placeholder="Select or type new options"
+                    label={label}
+                    placeholder={placeholder || "Select or type ..."}
                     InputProps={{
                         ...params.InputProps,
                         endAdornment: (
                             <React.Fragment>
                                 {params.InputProps.endAdornment}
-                                <Button onClick={handleAddOption}>Add</Button>
+                                { !!inputValue.trim() &&
+                                <Button
+                                        onClick={handleAddOption}
+                                        sx={{textTransform: "none"}}>
+                                    ADD '{inputValue.trim()}'
+                                </Button>
+                                }
                             </React.Fragment>
                         ),
                     }}
