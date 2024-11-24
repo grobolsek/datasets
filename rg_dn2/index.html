@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Click Fix</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+<canvas id="myCanvas" width="512" height="512"></canvas>
+
+<script>
+    let dots = [];
+    let curves = [];
+    const canvas = document.getElementById('myCanvas');
+    const context = canvas.getContext('2d');
+
+    canvas.addEventListener('click', function(event) {
+        const rect = canvas.getBoundingClientRect();
+
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        console.log(`Mouse clicked at: X = ${x}, Y = ${y}`);
+
+        context.fillStyle = 'red';
+        context.beginPath();
+        context.arc(x, y, 3, 0, Math.PI * 2);
+        context.fill();
+
+        dots.push([x, y]);
+        if (dots.length === 4) {
+            curves.push(dots);
+            dots = [];
+            createCurve(curves[curves.length - 1], 10000);
+        }
+    });
+
+    function createCurve(dots, steps) {
+        steps = 1 / (steps * 10);
+
+        for (let t = steps; t <= 1; t += steps) {
+            let p = newDot(dots, t);
+            context.fillStyle = 'black';
+            context.beginPath();
+            context.arc(p[0], p[1], 0.1, 0, Math.PI * 2);
+            context.fill();
+        }
+    }
+
+    function newDot(dots, t) {
+        let newDots = [...dots];
+
+        while (newDots.length > 1) {
+            let nextDots = [];
+            for (let i = 0; i < newDots.length - 1; i++) {
+                let px = (1 - t) * newDots[i][0] + t * newDots[i + 1][0];
+                let py = (1 - t) * newDots[i][1] + t * newDots[i + 1][1];
+                nextDots.push([px, py]);
+            }
+            newDots = nextDots;
+        }
+
+        return newDots[0];
+    }
+</script>
+</body>
+</html>
